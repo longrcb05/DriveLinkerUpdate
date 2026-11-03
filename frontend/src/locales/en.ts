@@ -29,10 +29,13 @@ export const en = {
     demoNotice: 'Demo Environment Mode',
   },
   nav: {
+    system: 'System',
     overview: 'Overview',
     fleet: 'Fleet Management',
     tracking: 'Tracking & AI',
     analytics: 'Analytics',
+    contract: 'Contracts & Partners',
+    contracts: 'Contracts & Partners',
     partners: 'Partners & Contracts',
     approvals: 'Price Approvals',
     settings: 'Settings',
@@ -267,6 +270,8 @@ export const en = {
     colStatus: 'Status',
   },
   auth: {
+    menu: 'Management Menu',
+    logout: 'Sign Out',
     platformName: 'DriveLinker Telematics',
     tagline: 'Drive Safe - Arrive Alive',
     loginHeader: 'System Login',

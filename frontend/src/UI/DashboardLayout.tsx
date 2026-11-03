@@ -6,12 +6,11 @@
 import { useState, useEffect } from 'react';
 import { Outlet, NavLink, useNavigate, useLocation } from 'react-router-dom';
 import {
-  Plus, LayoutDashboard, Truck, Map as MapIcon,
-  BarChart3, Settings, Handshake, LogOut, Settings2, RefreshCw, XCircle, X,
+  LayoutDashboard, Truck, Map as MapIcon,
+  BarChart3, Settings, Handshake, LogOut, Settings2, RefreshCw, XCircle,
   ClipboardCheck, Globe
 } from 'lucide-react';
 import { useLanguage } from '../context/LanguageContext';
-import { vehicleService } from '../services/vehicleService';
 
 export default function DashboardLayout() {
   const { language, toggleLanguage, t } = useLanguage();
@@ -23,13 +22,6 @@ export default function DashboardLayout() {
   const isAdminImpersonating = localStorage.getItem('isAdminImpersonating') === 'true';
   const [syncState, setSyncState] = useState<'IDLE' | 'STAGED' | 'SYNCING'>('IDLE');
 
-  // State quản lý hiển thị Modal Thêm Xe
-  const [showAddModal, setShowAddModal] = useState(false);
-  const [newVehiclePlate, setNewVehiclePlate] = useState('');
-  const [newVehicleModel, setNewVehicleModel] = useState('');
-  const [newVehicleYear, setNewVehicleYear] = useState('2024');
-  const [addModalError, setAddModalError] = useState('');
-
   useEffect(() => {
     setUserRole(localStorage.getItem('userRole') || 'TENANT_STAFF');
     setTenantName(localStorage.getItem('tenantName') || 'DriveLinker');
@@ -40,7 +32,7 @@ export default function DashboardLayout() {
     { id: 'fleet', label: t('nav.fleet'), icon: Truck, path: '/fleet', roles: ['TENANT_ADMIN', 'TENANT_STAFF', 'SUPER_ADMIN_VIEW'] },
     { id: 'tracking', label: t('nav.tracking'), icon: MapIcon, path: '/tracking', roles: ['TENANT_ADMIN', 'TENANT_STAFF', 'SUPER_ADMIN_VIEW'] },
     { id: 'analytics', label: t('nav.analytics'), icon: BarChart3, path: '/analytics', roles: ['TENANT_ADMIN', 'TENANT_STAFF', 'SUPER_ADMIN_VIEW'] },
-    { id: 'partners', label: t('nav.contracts'), icon: Handshake, path: '/partners', roles: ['TENANT_ADMIN', 'TENANT_STAFF', 'SUPER_ADMIN_VIEW'] },
+    { id: 'partners', label: t('nav.contract'), icon: Handshake, path: '/partners', roles: ['TENANT_ADMIN', 'TENANT_STAFF', 'SUPER_ADMIN_VIEW'] },
     { id: 'approvals', label: t('nav.approvals'), icon: ClipboardCheck, path: '/approvals', roles: ['TENANT_ADMIN', 'SUPER_ADMIN_VIEW'] },
     { id: 'settings', label: t('nav.settings'), icon: Settings, path: '/settings', roles: ['TENANT_ADMIN', 'SUPER_ADMIN_VIEW'] },
   ];
@@ -71,32 +63,6 @@ export default function DashboardLayout() {
     }, 2000);
   };
 
-  const handleSaveQuickVehicle = () => {
-    setAddModalError('');
-    if (!newVehiclePlate.trim()) {
-      setAddModalError('Vui lòng nhập biển số xe.');
-      return;
-    }
-    const tenantId = localStorage.getItem('tenantId') || 'COMPANY_A';
-    try {
-      vehicleService.createVehicle(tenantId, {
-        plate: newVehiclePlate.trim().toUpperCase(),
-        brand: 'Hyundai',
-        model: newVehicleModel.trim() || 'Xe tải vận chuyển',
-        year: Number(newVehicleYear) || 2024,
-        payload: '3.5 tấn',
-        status: 'AVAILABLE'
-      });
-      setShowAddModal(false);
-      setNewVehiclePlate('');
-      setNewVehicleModel('');
-      setNewVehicleYear('2024');
-      navigate('/fleet');
-    } catch (err: any) {
-      setAddModalError(err.message || 'Lỗi thêm phương tiện.');
-    }
-  };
-
   return (
     <div className="flex h-screen bg-[#F1F5F9] font-sans overflow-hidden relative print:bg-white">
       <style>{`
@@ -124,7 +90,7 @@ export default function DashboardLayout() {
 
           <div className="py-6 px-3">
             <p className="text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-4 px-3 flex items-center justify-between">
-              <span>{t('nav.system')}</span>
+              <span>{t('auth.menu')}</span>
               <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
             </p>
             <nav className="space-y-1.5">
@@ -210,7 +176,7 @@ export default function DashboardLayout() {
 
       <main className="flex-1 flex flex-col h-screen overflow-hidden relative">
         <header className="h-16 bg-white border-b border-slate-200 flex items-center justify-end px-6 shrink-0 z-40 shadow-sm">
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-4">
             {/* Language Switcher */}
             <button
               onClick={toggleLanguage}
@@ -221,25 +187,14 @@ export default function DashboardLayout() {
               <span>{language === 'vi' ? 'VI' : 'EN'}</span>
             </button>
 
-            {/* Nút gọi Modal Thêm Mới */}
-            <button
-              onClick={() => {
-                setAddModalError('');
-                setShowAddModal(true);
-              }}
-              className="bg-[#0EA5E9] hover:bg-sky-600 text-white px-3.5 py-1.5 rounded-lg text-xs font-bold flex items-center gap-1.5 shadow-sm transition-all active:scale-95"
-            >
-              <Plus className="w-3.5 h-3.5" /> {t('common.add')}
-            </button>
-
-            <div className="w-px h-6 bg-slate-200 mx-1"></div>
+            <div className="w-px h-6 bg-slate-200"></div>
 
             <div className="flex items-center gap-3 cursor-pointer hover:bg-slate-50 p-1.5 rounded-lg transition-colors">
               <div className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-xs ${isAdminImpersonating ? 'bg-rose-100 text-rose-600 border border-rose-200' : 'bg-sky-100 text-sky-600 border border-sky-200'}`}>
                 {isAdminImpersonating ? 'A' : 'U'}
               </div>
               <div>
-                <p className="text-xs font-bold text-slate-700 leading-none">Tài khoản</p>
+                <p className="text-xs font-bold text-slate-700 leading-none">{t('common.account')}</p>
                 <p className="text-[10px] text-slate-500 mt-1 font-medium tracking-wide">
                   {tenantName} •
                   <span className={isAdminImpersonating ? 'text-rose-600 font-bold ml-1' : userRole === 'TENANT_ADMIN' ? 'text-emerald-600 font-bold ml-1' : 'text-sky-600 font-bold ml-1'}>
@@ -274,95 +229,6 @@ export default function DashboardLayout() {
           </div>
         )}
       </main>
-
-      {/* ================= MODAL THÊM MỚI PHƯƠNG TIỆN ================= */}
-      {showAddModal && (
-        <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-[100] flex items-center justify-center p-4 animate-in fade-in duration-200">
-          <div className="bg-white rounded-2xl shadow-xl w-full max-w-md overflow-hidden animate-in zoom-in-95 duration-200">
-
-            {/* Modal Header */}
-            <div className="px-6 py-4 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
-              <div className="flex items-center gap-2">
-                <div className="p-2 bg-sky-100 text-sky-600 rounded-lg">
-                  <Truck className="w-5 h-5" />
-                </div>
-                <h3 className="font-bold text-slate-800 text-lg">Thêm phương tiện mới</h3>
-              </div>
-              <button
-                onClick={() => setShowAddModal(false)}
-                className="p-1.5 hover:bg-slate-200 rounded-full text-slate-400 hover:text-slate-700 transition-colors"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-
-            {/* Form Fields */}
-            <div className="p-6 space-y-4">
-              {addModalError && (
-                <div className="p-3 bg-rose-50 border border-rose-200 text-rose-700 rounded-lg text-xs font-semibold">
-                  {addModalError}
-                </div>
-              )}
-
-              <div>
-                <label className="block text-sm font-bold text-slate-700 mb-1.5">
-                  Biển số xe <span className="text-rose-500">*</span>
-                </label>
-                <input
-                  type="text"
-                  placeholder="VD: 43A-123.45"
-                  value={newVehiclePlate}
-                  onChange={e => setNewVehiclePlate(e.target.value)}
-                  className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:border-[#0EA5E9] focus:ring-1 focus:ring-[#0EA5E9] transition-all uppercase placeholder:normal-case font-medium text-slate-700"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-bold text-slate-700 mb-1.5">
-                  Thương hiệu / Mẫu xe
-                </label>
-                <input
-                  type="text"
-                  placeholder="VD: Hyundai HD120, Toyota Hilux..."
-                  value={newVehicleModel}
-                  onChange={e => setNewVehicleModel(e.target.value)}
-                  className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:border-[#0EA5E9] focus:ring-1 focus:ring-[#0EA5E9] transition-all font-medium text-slate-700"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-bold text-slate-700 mb-1.5">
-                  Năm sản xuất
-                </label>
-                <input
-                  type="number"
-                  placeholder="2024"
-                  value={newVehicleYear}
-                  onChange={e => setNewVehicleYear(e.target.value)}
-                  className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:border-[#0EA5E9] focus:ring-1 focus:ring-[#0EA5E9] transition-all font-medium text-slate-700"
-                />
-              </div>
-            </div>
-
-            {/* Modal Footer */}
-            <div className="px-6 py-4 bg-slate-50 border-t border-slate-100 flex justify-end gap-3">
-              <button
-                onClick={() => setShowAddModal(false)}
-                className="px-5 py-2.5 text-sm font-semibold text-slate-600 hover:bg-slate-200 rounded-xl transition-colors"
-              >
-                {t('common.cancel')}
-              </button>
-              <button
-                onClick={handleSaveQuickVehicle}
-                className="px-6 py-2.5 text-sm font-bold text-white bg-[#0EA5E9] hover:bg-sky-600 rounded-xl shadow-sm transition-all active:scale-95"
-              >
-                {t('common.save')}
-              </button>
-            </div>
-
-          </div>
-        </div>
-      )}
     </div>
   );
 }

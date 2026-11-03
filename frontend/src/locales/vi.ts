@@ -29,10 +29,13 @@ export const vi = {
     demoNotice: 'Môi trường Thử nghiệm (Demo Mode)',
   },
   nav: {
+    system: 'Hệ thống',
     overview: 'Tổng quan',
     fleet: 'Quản lý Đội xe',
     tracking: 'Theo dõi & AI',
     analytics: 'Phân tích',
+    contract: 'Hợp đồng & Đối tác',
+    contracts: 'Hợp đồng & Đối tác',
     partners: 'Đối tác & Hợp đồng',
     approvals: 'Duyệt đơn giá',
     settings: 'Cài đặt',
@@ -267,6 +270,8 @@ export const vi = {
     colStatus: 'Trạng thái',
   },
   auth: {
+    menu: 'Hệ thống quản lý',
+    logout: 'Đăng xuất',
     platformName: 'DriveLinker Telematics',
     tagline: 'Drive Safe - Arrive Alive',
     loginHeader: 'Đăng nhập Hệ thống',
