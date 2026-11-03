@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import {
   Truck, User, Lock, Building2, ArrowRight, AlertCircle,
@@ -34,13 +34,32 @@ export default function Login() {
   const [error, setError] = useState<string | null>(null);
   const navigate = useNavigate();
 
+  useEffect(() => {
+    try {
+      const stored = JSON.parse(localStorage.getItem('sys_tenants') || '[]');
+      if (stored.length === 0 || stored.some((t: any) => t.code === 'CTYA26')) {
+        localStorage.setItem('sys_tenants', JSON.stringify([
+          { id: 'COMPANY_A', name: 'Demo CTY A', code: 'CTA2026' },
+          { id: 'COMPANY_B', name: 'Demo CTY B', code: 'CTB2026' },
+          { id: 'COMPANY_C', name: 'Demo CTY C', code: 'CTC2026' }
+        ]));
+      }
+    } catch {
+      // ignore
+    }
+  }, []);
+
   // Nhận diện Doanh nghiệp realtime khi người dùng nhập mã
     const getMatchedTenant = () => {
     const code = tenantCode.trim().toUpperCase();
     const stored = JSON.parse(localStorage.getItem('sys_tenants') || '[]');
-    const fromStored = stored.find((t: any) => t.code === code);
-    if (fromStored) return fromStored;
-    return DEMO_DB.tenants.find(t => t.code === code);
+    let match = DEMO_DB.tenants.find(t => t.code === code) || stored.find((t: any) => t.code === code);
+    if (!match) {
+      if (code === 'CTA2026' || code === 'CTYA26') match = DEMO_DB.tenants.find(t => t.id === 'COMPANY_A');
+      else if (code === 'CTB2026' || code === 'CTYB26') match = DEMO_DB.tenants.find(t => t.id === 'COMPANY_B');
+      else if (code === 'CTC2026' || code === 'CTYC26') match = DEMO_DB.tenants.find(t => t.id === 'COMPANY_C');
+    }
+    return match;
   };
   const matchedTenant = getMatchedTenant();
 
@@ -62,16 +81,22 @@ export default function Login() {
       const codeInput = tenantCode.trim().toUpperCase();
       const userInput = username.trim().toLowerCase();
 
-      // 1. Tìm Doanh nghiệp theo Mã đăng nhập (hỗ trợ cả cấu hình đổi mã trong sys_tenants)
+      // 1. Tìm Doanh nghiệp theo Mã đăng nhập (ưu tiên DEMO_DB chuẩn và hỗ trợ sys_tenants tùy biến)
       const storedTenants = JSON.parse(localStorage.getItem('sys_tenants') || '[]');
-      const allTenants = [...DEMO_DB.tenants];
-      storedTenants.forEach((st: any) => {
-        const idx = allTenants.findIndex(t => t.id === st.id);
-        if (idx >= 0) allTenants[idx] = { ...allTenants[idx], ...st };
-        else allTenants.push(st);
-      });
+      
+      let tenant = DEMO_DB.tenants.find(t => t.code === codeInput)
+                || storedTenants.find((st: any) => st.code === codeInput);
 
-      const tenant = allTenants.find(t => t.code === codeInput);
+      // Hỗ trợ alias linh hoạt (CTA2026 / CTYA26 -> COMPANY_A)
+      if (!tenant) {
+        if (codeInput === 'CTA2026' || codeInput === 'CTYA26') {
+          tenant = DEMO_DB.tenants.find(t => t.id === 'COMPANY_A') || { id: 'COMPANY_A', name: 'Demo CTY A', code: 'CTA2026' };
+        } else if (codeInput === 'CTB2026' || codeInput === 'CTYB26') {
+          tenant = DEMO_DB.tenants.find(t => t.id === 'COMPANY_B') || { id: 'COMPANY_B', name: 'Demo CTY B', code: 'CTB2026' };
+        } else if (codeInput === 'CTC2026' || codeInput === 'CTYC26') {
+          tenant = DEMO_DB.tenants.find(t => t.id === 'COMPANY_C') || { id: 'COMPANY_C', name: 'Demo CTY C', code: 'CTC2026' };
+        }
+      }
       if (!tenant) {
         setError('Mã đăng nhập doanh nghiệp không tồn tại.');
         setIsLoading(false);

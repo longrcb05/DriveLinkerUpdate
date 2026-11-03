@@ -21,11 +21,12 @@ import {
  * Hàm khởi tạo dữ liệu mẫu (Seed Data) cho môi trường phát triển.
  */
 const initDemoData = () => {
-  if (!localStorage.getItem('sys_tenants')) {
+  const storedTenants = JSON.parse(localStorage.getItem('sys_tenants') || '[]');
+  if (storedTenants.length === 0 || storedTenants.some((t: any) => t.code === 'CTYA26')) {
     localStorage.setItem('sys_tenants', JSON.stringify([
-      { id: 'COMPANY_A', name: 'Demo CTY A', code: 'CTYA26' },
-      { id: 'COMPANY_B', name: 'Demo CTY B', code: 'CTYB26' },
-      { id: 'COMPANY_C', name: 'Demo CTY C', code: 'CTYC26' }
+      { id: 'COMPANY_A', name: 'Demo CTY A', code: 'CTA2026' },
+      { id: 'COMPANY_B', name: 'Demo CTY B', code: 'CTB2026' },
+      { id: 'COMPANY_C', name: 'Demo CTY C', code: 'CTC2026' }
     ]));
   }
 
@@ -582,6 +583,98 @@ export default function Settings() {
                   <td className="p-3 text-center"><span className="text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded font-bold">{log.result}</span></td>
                 </tr>
               ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      {/* ================= 5. MODULE: QUẢN LÝ TÀI KHOẢN & PHÂN QUYỀN DOANH NGHIỆP ================= */}
+      <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden mt-6">
+        <div className="p-5 border-b border-slate-100 flex flex-wrap justify-between items-center gap-3 bg-slate-50/50">
+          <div>
+            <h3 className="font-bold text-slate-800 flex items-center gap-2">
+              <Users className="w-5 h-5 text-sky-500" /> Quản lý Tài khoản & Phân quyền Doanh nghiệp
+            </h3>
+            <p className="text-xs text-slate-500 mt-1">
+              Danh sách nhân sự thuộc doanh nghiệp. Phân quyền chặt chẽ giữa Quản trị viên (TENANT_ADMIN) và Nhân viên (TENANT_STAFF).
+            </p>
+          </div>
+          <button
+            onClick={() => {
+              setAccountFormError('');
+              setAccountForm({ fullName: '', username: '', email: '', password: '', role: 'TENANT_STAFF' });
+              setIsAddAccountModalOpen(true);
+            }}
+            className="bg-sky-500 hover:bg-sky-600 text-white px-4 py-2 rounded-xl text-sm font-bold flex items-center gap-2 shadow-sm transition-all active:scale-95"
+          >
+            <UserPlus className="w-4 h-4" /> Thêm tài khoản
+          </button>
+        </div>
+
+        <div className="overflow-x-auto">
+          <table className="w-full text-left text-sm">
+            <thead className="bg-white text-[10px] font-bold text-slate-400 uppercase border-b border-slate-100">
+              <tr>
+                <th className="p-4">Họ và tên</th>
+                <th className="p-4">Tên đăng nhập</th>
+                <th className="p-4">Email</th>
+                <th className="p-4">Vai trò</th>
+                <th className="p-4">Trạng thái</th>
+                <th className="p-4">Ngày tạo</th>
+                <th className="p-4 text-right">Thao tác</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-100">
+              {accountList.length === 0 ? (
+                <tr>
+                  <td colSpan={7} className="p-8 text-center text-slate-400 text-sm">
+                    Chưa có tài khoản nào được tạo cho doanh nghiệp này.
+                  </td>
+                </tr>
+              ) : (
+                accountList.map((acc: any) => (
+                  <tr key={acc.id} className="hover:bg-slate-50/80 transition-colors">
+                    <td className="p-4 font-bold text-slate-800">{acc.fullName}</td>
+                    <td className="p-4 font-mono text-xs font-semibold text-slate-600">{acc.username}</td>
+                    <td className="p-4 text-slate-600 text-xs">{acc.email}</td>
+                    <td className="p-4">
+                      {acc.role === 'TENANT_ADMIN' ? (
+                        <span className="px-2.5 py-1 text-xs font-bold rounded-lg bg-purple-50 text-purple-700 border border-purple-200">
+                          Quản trị viên (ADMIN)
+                        </span>
+                      ) : (
+                        <span className="px-2.5 py-1 text-xs font-bold rounded-lg bg-sky-50 text-sky-700 border border-sky-200">
+                          Nhân viên (STAFF)
+                        </span>
+                      )}
+                    </td>
+                    <td className="p-4">
+                      {acc.status === 'ACTIVE' ? (
+                        <span className="px-2.5 py-1 text-xs font-bold rounded-lg bg-emerald-50 text-emerald-700 border border-emerald-200">
+                          Đang hoạt động
+                        </span>
+                      ) : (
+                        <span className="px-2.5 py-1 text-xs font-bold rounded-lg bg-rose-50 text-rose-700 border border-rose-200">
+                          Đã khóa
+                        </span>
+                      )}
+                    </td>
+                    <td className="p-4 text-xs text-slate-500 font-mono">{acc.createdAt || '---'}</td>
+                    <td className="p-4 text-right">
+                      <button
+                        onClick={() => handleToggleAccountStatus(acc)}
+                        className={`px-3 py-1.5 text-xs font-bold rounded-lg transition-colors ${
+                          acc.status === 'ACTIVE'
+                            ? 'bg-rose-50 text-rose-600 hover:bg-rose-100 border border-rose-200'
+                            : 'bg-emerald-50 text-emerald-600 hover:bg-emerald-100 border border-emerald-200'
+                        }`}
+                      >
+                        {acc.status === 'ACTIVE' ? 'Khóa tài khoản' : 'Mở khóa'}
+                      </button>
+                    </td>
+                  </tr>
+                ))
+              )}
             </tbody>
           </table>
         </div>
