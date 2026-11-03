@@ -35,13 +35,14 @@ const initDemoData = () => {
   }
 
   // KHỞI TẠO DỮ LIỆU TÀI KHOẢN DOANH NGHIỆP
-  if (!localStorage.getItem('sys_accounts')) {
+  const existingAccounts = JSON.parse(localStorage.getItem('sys_accounts') || '[]');
+  if (existingAccounts.length === 0 || existingAccounts.some((a: any) => !a.password)) {
     localStorage.setItem('sys_accounts', JSON.stringify([
-      { id: 'ACC-001', tenantId: 'COMPANY_A', username: 'owner.an', fullName: 'Nguyễn Văn An', email: 'owner.an@drivelinker.vn', role: 'TENANT_ADMIN', status: 'ACTIVE', createdAt: '2026-10-15' },
-      { id: 'ACC-002', tenantId: 'COMPANY_A', username: 'staff.a', fullName: 'Trần Thị Lan', email: 'staff.a@drivelinker.vn', role: 'TENANT_STAFF', status: 'ACTIVE', createdAt: '2026-10-20' },
-      { id: 'ACC-003', tenantId: 'COMPANY_B', username: 'staff.b', fullName: 'Lê Văn Bình', email: 'staff.b@drivelinker.vn', role: 'TENANT_STAFF', status: 'ACTIVE', createdAt: '2026-10-22' },
-      { id: 'ACC-004', tenantId: 'COMPANY_C', username: 'owner.c', fullName: 'Vũ Văn Cường', email: 'owner.c@drivelinker.vn', role: 'TENANT_ADMIN', status: 'ACTIVE', createdAt: '2026-10-25' },
-      { id: 'ACC-005', tenantId: 'COMPANY_C', username: 'staff.c', fullName: 'Phạm Thị Chi', email: 'staff.c@drivelinker.vn', role: 'TENANT_STAFF', status: 'ACTIVE', createdAt: '2026-10-26' }
+      { id: 'ACC-001', tenantId: 'COMPANY_A', username: 'owner.an', fullName: 'Nguyễn Văn An', email: 'owner.an@drivelinker.vn', role: 'TENANT_ADMIN', status: 'ACTIVE', password: '123456', createdAt: '2026-10-15' },
+      { id: 'ACC-002', tenantId: 'COMPANY_A', username: 'staff.a', fullName: 'Trần Thị Lan', email: 'staff.a@drivelinker.vn', role: 'TENANT_STAFF', status: 'ACTIVE', password: '123456', createdAt: '2026-10-20' },
+      { id: 'ACC-003', tenantId: 'COMPANY_B', username: 'staff.b', fullName: 'Lê Văn Bình', email: 'staff.b@drivelinker.vn', role: 'TENANT_STAFF', status: 'ACTIVE', password: '123456', createdAt: '2026-10-22' },
+      { id: 'ACC-004', tenantId: 'COMPANY_C', username: 'owner.c', fullName: 'Vũ Văn Cường', email: 'owner.c@drivelinker.vn', role: 'TENANT_ADMIN', status: 'ACTIVE', password: '123456', createdAt: '2026-10-25' },
+      { id: 'ACC-005', tenantId: 'COMPANY_C', username: 'staff.c', fullName: 'Phạm Thị Chi', email: 'staff.c@drivelinker.vn', role: 'TENANT_STAFF', status: 'ACTIVE', password: '123456', createdAt: '2026-10-26' }
     ]));
   }
 

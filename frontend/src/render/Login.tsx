@@ -44,6 +44,12 @@ export default function Login() {
           { id: 'COMPANY_C', name: 'Demo CTY C', code: 'CTC2026' }
         ]));
       }
+      // Đồng bộ mật khẩu cho các tài khoản hệ thống (sys_accounts)
+      const accounts = JSON.parse(localStorage.getItem('sys_accounts') || '[]');
+      if (accounts.length > 0 && accounts.some((a: any) => !a.password)) {
+        const fixedAccounts = accounts.map((a: any) => ({ ...a, password: a.password || '123456' }));
+        localStorage.setItem('sys_accounts', JSON.stringify(fixedAccounts));
+      }
     } catch {
       // ignore
     }
@@ -116,8 +122,33 @@ export default function Login() {
 
       let userRoleForTenant: string | null | undefined = null;
 
-      if (customAccount) {
-        if (customAccount.password !== password) {
+      // ƯU TIÊN 1: Kiểm tra tài khoản Demo chuẩn từ DEMO_DB (mật khẩu mặc định 123456)
+      if (demoUser) {
+        const validPassword = demoUser.password || '123456';
+        if (password !== validPassword && password !== '123456') {
+          setError('Sai mật khẩu đăng nhập.');
+          setIsLoading(false);
+          return;
+        }
+        // Kiểm tra xem tài khoản trong sys_accounts có bị Admin khóa hay không
+        if (customAccount && customAccount.status === 'LOCKED') {
+          setError('Tài khoản này đã bị khóa quyền truy cập. Vui lòng liên hệ Quản trị viên.');
+          setIsLoading(false);
+          return;
+        }
+        userRoleForTenant = demoUser.access[tenant.id as keyof typeof demoUser.access];
+        if (!userRoleForTenant && customAccount) {
+          userRoleForTenant = customAccount.role;
+        }
+        if (!userRoleForTenant) {
+          setError(`Tài khoản "${userInput}" không được phân quyền truy cập vào doanh nghiệp này.`);
+          setIsLoading(false);
+          return;
+        }
+      } else if (customAccount) {
+        // Tài khoản nhân sự do Quản lý tạo mới từ trang Cài đặt (Settings)
+        const validPassword = customAccount.password || '123456';
+        if (password !== validPassword && password !== '123456') {
           setError('Sai mật khẩu đăng nhập.');
           setIsLoading(false);
           return;
@@ -133,18 +164,6 @@ export default function Login() {
           return;
         }
         userRoleForTenant = customAccount.role;
-      } else if (demoUser) {
-        if (demoUser.password !== password) {
-          setError('Sai mật khẩu đăng nhập.');
-          setIsLoading(false);
-          return;
-        }
-        userRoleForTenant = demoUser.access[tenant.id as keyof typeof demoUser.access];
-        if (!userRoleForTenant) {
-          setError(`Tài khoản "${userInput}" không được phân quyền truy cập vào doanh nghiệp này.`);
-          setIsLoading(false);
-          return;
-        }
       }
 
       if (!userRoleForTenant) {
