@@ -238,39 +238,38 @@ export default function CreateContract() {
 
     // ==========================================
     // COMPONENT LÕI TẠO BẢN HỢP ĐỒNG (TÁI SỬ DỤNG CHO DEMO VÀ PDF)
-    // Các class in ấn được quy định rất chặt: giải phóng height, thả lỏng max-width
+    // Quy chuẩn thể thức văn bản pháp lý: Font Times New Roman, Cỡ chữ 13pt
     // ==========================================
     const ContractPaperTemplate = () => (
-        <div className="font-['Times_New_Roman',_Times,_serif] text-[14pt] leading-relaxed text-black">
+        <div className="font-['Times_New_Roman',_Times,_serif] text-[13pt] leading-[1.35] text-black">
 
             {/* TRANG 1 */}
-            <div className="bg-white mx-auto shadow-xl p-[15mm] w-full max-w-[210mm] min-h-[297mm] mb-8 print:w-full print:max-w-none print:min-h-0 print:shadow-none print:p-0 print:m-0 print:block">
-                <div className="text-center mb-6">
-                    <h2 className="font-bold text-[14pt] mb-1 uppercase">Cộng hòa xã hội chủ nghĩa Việt Nam</h2>
-                    <h3 className="font-bold text-[14pt] underline decoration-solid underline-offset-4">Độc lập - Tự do - Hạnh phúc</h3>
+            <div className="contract-page page-1 bg-white mx-auto shadow-xl p-[15mm_18mm] w-full max-w-[210mm] min-h-[297mm] mb-8 print:w-full print:max-w-none print:min-h-0 print:shadow-none print:p-0 print:m-0 print:block">
+                <div className="text-center mb-3">
+                    <h2 className="font-bold text-[12.5pt] mb-0.5 uppercase">CỘNG HÒA XÃ HỘI CHỦ NGHĨA VIỆT NAM</h2>
+                    <h3 className="font-bold text-[13pt] underline decoration-solid underline-offset-4 mb-2.5">Độc lập - Tự do - Hạnh phúc</h3>
+                    <h1 className="text-[16pt] font-bold text-center mb-1 uppercase tracking-wide">HỢP ĐỒNG THUÊ XE Ô TÔ TỰ LÁI</h1>
+                    <p className="italic text-center mb-2 text-[12pt]">
+                        Hôm nay, ngày {new Date().getDate()} tháng {new Date().getMonth() + 1} năm {new Date().getFullYear()}, tại văn phòng {formData.partyAName || 'hệ thống DriveLinker'}, chúng tôi gồm có:
+                    </p>
                 </div>
 
-                <h1 className="text-[18pt] font-bold text-center mb-2 mt-8 uppercase">Hợp đồng thuê xe ô tô tự lái</h1>
-                <p className="italic text-center mb-8 text-[13pt]">
-                    Hôm nay, ngày {new Date().getDate()} tháng {new Date().getMonth() + 1} năm {new Date().getFullYear()}, tại văn phòng Công ty A, chúng tôi gồm có:
-                </p>
-
-                <div className="space-y-1.5 mb-6 avoid-break">
-                    <p className="font-bold uppercase mb-2">Bên cho thuê xe (Bên A):</p>
+                <div className="space-y-0.5 mb-2.5 avoid-break">
+                    <p className="font-bold uppercase text-[13pt] mb-0.5">BÊN CHO THUÊ XE (BÊN A):</p>
                     <p>Tên tổ chức/Cá nhân: <span className="font-bold">{formData.partyAName || '............................................................'}</span></p>
                     <p>Địa chỉ trụ sở: {formData.partyAAddress || '..................................................................................'}</p>
                     <p>Điện thoại: {formData.partyAPhone || '............................................................'}</p>
-                    <p>Người đại diện: {formData.partyARepresentative || '..........................'} <span className="ml-8">Chức vụ: {formData.partyARole || '..........................'}</span></p>
+                    <p>Người đại diện: <span className="font-bold">{formData.partyARepresentative || '..........................'}</span> <span className="ml-8">Chức vụ: {formData.partyARole || '..........................'}</span></p>
                 </div>
 
-                <div className="space-y-1.5 mb-8 avoid-break">
-                    <p className="font-bold uppercase mb-2">Bên thuê xe (Bên B):</p>
+                <div className="space-y-0.5 mb-2.5 avoid-break">
+                    <p className="font-bold uppercase text-[13pt] mb-0.5">BÊN THUÊ XE (BÊN B):</p>
                     <div className="flex justify-between gap-4">
                         <p className="flex-1">Ông/Bà: <span className="font-bold uppercase">{formData.renterName || '........................................'}</span></p>
                         <p className="flex-1">Số điện thoại: <span className="font-bold">{formData.renterPhone || '..........................'}</span></p>
                     </div>
                     <p>Địa chỉ thường trú: {formData.renterAddress || '..................................................................................'}</p>
-                    <div className="flex justify-between gap-4 mt-1">
+                    <div className="flex justify-between gap-4">
                         <p className="flex-1">CCCD/CMND số: <span className="font-bold">{formData.cccdNumber || '..........................'}</span></p>
                         <p className="flex-1">Cấp ngày: {formData.cccdDate ? new Date(formData.cccdDate).toLocaleDateString('vi-VN') : '....................'}</p>
                     </div>
@@ -279,24 +278,24 @@ export default function CreateContract() {
                         <p className="flex-1">Giấy phép lái xe: <span className="font-bold">{formData.licenseNumber || '..........................'}</span></p>
                     </div>
                     {(formData.guarantorName || formData.guarantorPhone) && (
-                        <p className="mt-2">
+                        <p className="mt-0.5">
                             Người bảo lãnh / Liên hệ khẩn cấp: Ông/Bà <span className="font-bold">{formData.guarantorName || '....................'}</span>.
                             Quan hệ: {formData.guarantorRelation || '.........'} - Số điện thoại: <span className="font-bold">{formData.guarantorPhone || '....................'}</span>.
                         </p>
                     )}
                 </div>
 
-                <p className="font-bold italic mb-4">Sau khi thỏa thuận, hai bên đồng ý ký kết Hợp đồng thuê xe với các điều khoản sau:</p>
+                <p className="italic text-[12.5pt] mb-2">Sau khi thỏa thuận, hai bên đồng ý ký kết Hợp đồng thuê xe với các điều khoản sau:</p>
 
-                <div className="space-y-2 mb-6 avoid-break">
-                    <p className="font-bold uppercase">Điều 1: Thông tin tài sản cho thuê</p>
-                    <p>Bên A đồng ý cho Bên B thuê 01 chiếc xe ô tô mang biển kiểm soát: <span className="font-bold text-[16pt] border border-black/30 px-2 py-0.5 ml-1">{formData.carPlate || '....................'}</span>.</p>
-                    <p className="text-justify">Xe được trang bị đầy đủ thiết bị an toàn và hệ thống giám sát hành trình. Bên B cam kết không tự ý tháo dỡ, can thiệp vào hệ thống này trong suốt quá trình thuê xe.</p>
+                <div className="space-y-0.5 mb-2.5 avoid-break">
+                    <p className="font-bold uppercase text-[13pt] mb-0.5">ĐIỀU 1: THÔNG TIN TÀI SẢN CHO THUÊ</p>
+                    <p>Bên A đồng ý cho Bên B thuê 01 chiếc xe ô tô mang biển kiểm soát: <span className="font-bold text-[13.5pt] border border-black/40 px-2 py-0.5 ml-1 inline-block rounded">{formData.carPlate || '....................'}</span>.</p>
+                    <p className="text-justify leading-normal">Xe được trang bị đầy đủ thiết bị an toàn và hệ thống giám sát hành trình. Bên B cam kết không tự ý tháo dỡ, can thiệp vào hệ thống này trong suốt quá trình thuê xe.</p>
                 </div>
 
-                <div className="space-y-2 mb-6 avoid-break">
-                    <p className="font-bold uppercase">Điều 2: Thời gian và giá thuê xe</p>
-                    <ul className="list-disc pl-8 space-y-1.5">
+                <div className="space-y-0.5 mb-1.5 avoid-break">
+                    <p className="font-bold uppercase text-[13pt] mb-0.5">ĐIỀU 2: THỜI GIAN VÀ GIÁ THUÊ XE</p>
+                    <ul className="list-disc pl-6 space-y-0.5">
                         <li>Thời gian bắt đầu thuê: {formData.rentStartDate ? new Date(formData.rentStartDate).toLocaleString('vi-VN') : '............................................................'}</li>
                         <li>Thời gian dự kiến trả xe: {formData.rentEndDate ? new Date(formData.rentEndDate).toLocaleString('vi-VN') : '............................................................'}</li>
                         <li>Đơn giá thuê: <span className="font-bold">{formatMoney(formData.rentPrice)}</span> VNĐ / ngày.</li>
@@ -305,60 +304,65 @@ export default function CreateContract() {
                 </div>
             </div>
 
-            {/* TRANG 2 - Ép ngắt trang an toàn */}
-            <div className="page-break bg-white mx-auto shadow-xl p-[15mm] w-full max-w-[210mm] min-h-[297mm] print:w-full print:max-w-none print:min-h-0 print:shadow-none print:p-0 print:m-0 print:block">
+            {/* TRANG 2 - Ép ngắt trang an toàn sang Sheet 2 */}
+            <div className="contract-page page-2 bg-white mx-auto shadow-xl p-[15mm_18mm] w-full max-w-[210mm] min-h-[297mm] print:w-full print:max-w-none print:min-h-0 print:shadow-none print:p-0 print:m-0 print:block">
 
-                <div className="space-y-2 mb-6 avoid-break">
-                    <p className="font-bold uppercase">Điều 3: Quyền và nghĩa vụ của các bên</p>
-                    <p className="font-bold italic">3.1. Nghĩa vụ của Bên A:</p>
-                    <ul className="list-disc pl-8 space-y-1 text-justify">
+                <div className="space-y-0.5 mb-3 avoid-break">
+                    <p className="font-bold uppercase text-[13pt] mb-0.5">ĐIỀU 3: QUYỀN VÀ NGHĨA VỤ CỦA CÁC BÊN</p>
+                    <p className="font-bold text-[13pt] mt-0.5">3.1. Nghĩa vụ của Bên A:</p>
+                    <ul className="list-disc pl-6 space-y-0.5 text-justify">
                         <li>Giao xe đúng chất lượng, đúng thời gian và địa điểm đã thỏa thuận.</li>
                         <li>Cung cấp đầy đủ giấy tờ pháp lý của xe (bản sao y có công chứng hoặc bản gốc tùy thỏa thuận).</li>
                     </ul>
-                    <p className="font-bold italic mt-2">3.2. Nghĩa vụ của Bên B:</p>
-                    <ul className="list-disc pl-8 space-y-1 text-justify">
+                    <p className="font-bold text-[13pt] mt-1.5">3.2. Nghĩa vụ của Bên B:</p>
+                    <ul className="list-disc pl-6 space-y-0.5 text-justify">
                         <li>Thanh toán đầy đủ tiền thuê xe và tiền cọc cho Bên A.</li>
                         <li>Tự chịu trách nhiệm dân sự, hình sự và chi phí phạt nguội về các vi phạm giao thông phát sinh trong thời gian thuê.</li>
                         <li>Không sử dụng xe vào mục đích cầm cố, thế chấp, chạy xe công nghệ hoặc vi phạm pháp luật.</li>
                     </ul>
                 </div>
 
-                {formData.requireInvoice && (
-                    <div className="space-y-2 mb-6 avoid-break">
-                        <p className="font-bold uppercase">Điều 4: Thông tin xuất hóa đơn VAT</p>
+                {formData.requireInvoice ? (
+                    <div className="space-y-0.5 mb-3 avoid-break">
+                        <p className="font-bold uppercase text-[13pt] mb-0.5">ĐIỀU 4: THÔNG TIN XUẤT HÓA ĐƠN VAT</p>
                         <p>Bên A thực hiện xuất hóa đơn GTGT cho Bên B theo thông tin sau:</p>
-                        <ul className="list-disc pl-8 space-y-1.5">
+                        <ul className="list-disc pl-6 space-y-0.5">
                             <li>Tên đơn vị: <span className="font-bold">{formData.companyName}</span></li>
                             <li>Mã số thuế: <span className="font-bold">{formData.taxCode}</span></li>
                             <li>Địa chỉ: {formData.companyAddress}</li>
                         </ul>
                     </div>
+                ) : (
+                    <div className="space-y-0.5 mb-3 avoid-break">
+                        <p className="font-bold uppercase text-[13pt] mb-0.5">ĐIỀU 4: THÔNG TIN HÓA ĐƠN VAT</p>
+                        <p className="text-justify leading-normal">Hợp đồng này không yêu cầu xuất hóa đơn GTGT. Nếu Bên B có nhu cầu xuất hóa đơn phát sinh sau thời điểm ký kết, Bên B phải thông báo cho Bên A trước khi bàn giao xe và thanh toán bổ sung thuế GTGT theo quy định của pháp luật.</p>
+                    </div>
                 )}
 
-                <div className="space-y-2 mb-10 avoid-break">
-                    <p className="font-bold uppercase">Điều {formData.requireInvoice ? '5' : '4'}: Cam kết chung</p>
-                    <p className="text-justify">Hai bên cam kết thực hiện đúng các điều khoản trong hợp đồng. Hợp đồng được lập thành 02 (hai) bản, mỗi bên giữ 01 (một) bản có giá trị pháp lý như nhau và có hiệu lực kể từ ngày ký.</p>
+                <div className="space-y-0.5 mb-4 avoid-break">
+                    <p className="font-bold uppercase text-[13pt] mb-0.5">ĐIỀU 5: CAM KẾT CHUNG</p>
+                    <p className="text-justify leading-normal">Hai bên cam kết thực hiện đúng các điều khoản trong hợp đồng. Hợp đồng được lập thành 02 (hai) bản, mỗi bên giữ 01 (một) bản có giá trị pháp lý như nhau và có hiệu lực kể từ ngày ký.</p>
                 </div>
 
-                <div className="flex justify-between text-center mt-12 gap-8 avoid-break pb-10">
-                    <div className="flex-1">
-                        <p className="font-bold mb-1">ĐẠI DIỆN BÊN A</p>
-                        <p className="italic text-[12pt] mb-24">(Ký, đóng dấu, ghi rõ họ tên)</p>
-                        <p className="font-bold uppercase">{formData.partyARepresentative}</p>
+                <div className="grid grid-cols-2 text-center mt-5 gap-6 avoid-break pb-4">
+                    <div>
+                        <p className="font-bold uppercase text-[13pt] mb-0.5">ĐẠI DIỆN BÊN A</p>
+                        <p className="italic text-[11.5pt] mb-14">(Ký, đóng dấu, ghi rõ họ tên)</p>
+                        <p className="font-bold uppercase text-[13pt]">{formData.partyARepresentative}</p>
                     </div>
-                    <div className="flex-1">
-                        <p className="font-bold mb-1">ĐẠI DIỆN BÊN B</p>
-                        <p className="italic text-[12pt] mb-4">(Ký, ghi rõ họ tên)</p>
-                        <div className="h-28 flex items-center justify-center">
+                    <div>
+                        <p className="font-bold uppercase text-[13pt] mb-0.5">ĐẠI DIỆN BÊN B</p>
+                        <p className="italic text-[11.5pt] mb-1">(Ký, ghi rõ họ tên)</p>
+                        <div className="h-14 flex items-center justify-center mb-1">
                             {signatureData ? (
-                                <img src={signatureData} alt="Chữ ký bên B" className="max-h-full max-w-full mix-blend-multiply" />
+                                <img src={signatureData} alt="Chữ ký bên B" className="max-h-full max-w-full mix-blend-multiply object-contain" />
                             ) : (
-                                <div className="w-full h-full border-2 border-dashed border-slate-300 flex items-center justify-center text-slate-400 font-sans text-sm no-print">
+                                <div className="w-full h-full border-2 border-dashed border-slate-300 flex items-center justify-center text-slate-400 font-sans text-xs no-print">
                                     (Khu vực Ký tên)
                                 </div>
                             )}
                         </div>
-                        <p className="font-bold uppercase mt-2">{formData.renterName || '........................................'}</p>
+                        <p className="font-bold uppercase text-[13pt]">{formData.renterName || '........................................'}</p>
                     </div>
                 </div>
             </div>
@@ -369,7 +373,7 @@ export default function CreateContract() {
         <div className="flex-1 overflow-auto bg-[#F8FAFC] p-6 space-y-6 relative h-full">
 
             {/* =========================================================
-                PORTAL IN ẤN (GIẢI QUYẾT TRIỆT ĐỂ LỖI MẤT TRANG)
+                PORTAL IN ẤN (GIẢI QUYẾT TRIỆT ĐỂ LỖI MẤT TRANG VÀ KHOẢNG TRỐNG)
                 ========================================================= */}
             <style>{`
                 /* Thiết lập ngầm để Portal không lộ diện khi dùng máy tính bình thường */
@@ -403,10 +407,25 @@ export default function CreateContract() {
                     /* Cài đặt khổ in thực tế */
                     @page { 
                         size: A4 portrait; 
-                        margin: 15mm; 
+                        margin: 12mm 18mm; 
                     }
                     
-                    .page-break { page-break-before: always !important; break-before: page !important; display: block !important; }
+                    .contract-page.page-1 {
+                        page-break-after: always !important;
+                        break-after: page !important;
+                        page-break-inside: avoid !important;
+                        break-inside: avoid !important;
+                    }
+
+                    .contract-page.page-2 {
+                        page-break-before: always !important;
+                        break-before: page !important;
+                        page-break-after: avoid !important;
+                        break-after: avoid !important;
+                        page-break-inside: avoid !important;
+                        break-inside: avoid !important;
+                    }
+
                     .avoid-break { page-break-inside: avoid !important; break-inside: avoid !important; }
                     .no-print { display: none !important; }
                 }

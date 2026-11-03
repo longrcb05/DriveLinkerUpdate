@@ -76,37 +76,80 @@ export default function DashboardLayout() {
       <aside className="w-[260px] bg-[#0F172A] text-slate-300 flex flex-col justify-between shrink-0 z-50">
         <div className="flex-1 overflow-auto overflow-x-hidden">
           <div className="h-16 flex items-center px-6 border-b border-slate-800 shrink-0">
-            <div className="flex items-center gap-3">
-              <div className="w-8 h-8 bg-[#0EA5E9] rounded-lg flex items-center justify-center shadow-sm">
-                <Truck className="w-5 h-5 text-white" />
+            <div className="flex items-center gap-3 group cursor-pointer">
+              <div className="w-9 h-9 bg-gradient-to-tr from-[#0284C7] to-[#0EA5E9] rounded-xl flex items-center justify-center shadow-md shadow-sky-500/20 transition-all duration-300 group-hover:scale-105 group-hover:shadow-sky-500/40">
+                <Truck className="w-5 h-5 text-white transition-transform duration-300 group-hover:translate-x-0.5" />
               </div>
               <div>
-                <h1 className="text-white font-bold text-lg leading-tight">DriveLinker</h1>
+                <h1 className="text-white font-bold text-lg leading-tight tracking-wide flex items-center gap-1.5">
+                  DriveLinker
+                </h1>
                 <p className="text-[10px] text-slate-400 font-semibold tracking-widest uppercase">Drive Safe - Arrive Alive</p>
               </div>
             </div>
           </div>
 
-          <div className="py-6 px-4">
-            <p className="text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-4 px-2">Menu</p>
-            <nav className="space-y-1">
+          <div className="py-6 px-3">
+            <p className="text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-4 px-3 flex items-center justify-between">
+              <span>Hệ thống</span>
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+            </p>
+            <nav className="space-y-1.5">
               {filteredMenu.map((item) => {
                 const Icon = item.icon;
+                const isCurrent = (item.path === '/overview' && location.pathname === '/overview') || location.pathname === item.path;
+
+                // Micro-animation cụ thể cho từng icon menu khi hover
+                const getIconAnimation = (id: string) => {
+                  switch (id) {
+                    case 'overview':
+                      return 'group-hover:rotate-12 group-hover:scale-125 group-hover:text-sky-400';
+                    case 'tracking':
+                      return 'group-hover:-translate-y-1 group-hover:scale-125 group-hover:text-emerald-400';
+                    case 'analytics':
+                      return 'group-hover:scale-125 group-hover:text-amber-400';
+                    case 'partners':
+                      return 'group-hover:-rotate-12 group-hover:scale-125 group-hover:text-indigo-400';
+                    case 'approvals':
+                      return 'group-hover:scale-125 group-hover:rotate-6 group-hover:text-emerald-400';
+                    case 'settings':
+                      return 'group-hover:rotate-90 group-hover:scale-125 group-hover:text-rose-400 duration-500';
+                    default:
+                      return 'group-hover:scale-125 group-hover:text-sky-400';
+                  }
+                };
+
                 return (
                   <NavLink
                     key={item.id}
                     to={item.path}
-                    className={({ isActive }) =>
-                      `w-full flex items-center justify-between px-3 py-3 font-medium transition-all duration-200 border-l-4 ${isActive || (item.path === '/overview' && location.pathname === '/overview')
-                        ? 'border-[#0EA5E9] text-[#0EA5E9] bg-slate-800/30'
-                        : 'border-transparent text-slate-400 hover:text-white hover:bg-slate-800/50'
-                      }`
-                    }
+                    className={({ isActive }) => {
+                      const active = isActive || isCurrent;
+                      return `group w-full flex items-center justify-between px-3.5 py-3 font-medium transition-all duration-300 rounded-xl relative overflow-hidden select-none ${
+                        active
+                          ? 'bg-gradient-to-r from-sky-500/20 via-sky-500/10 to-transparent text-sky-400 font-bold shadow-sm'
+                          : 'text-slate-400 hover:text-white hover:bg-slate-800/60'
+                      }`;
+                    }}
                   >
-                    <div className="flex items-center gap-3">
-                      <Icon className="w-5 h-5" />
-                      <span className="text-sm">{item.label}</span>
-                    </div>
+                    {({ isActive }) => {
+                      const active = isActive || isCurrent;
+                      return (
+                        <>
+                          {active && (
+                            <span className="absolute left-0 top-1/2 -translate-y-1/2 w-1.5 h-6 bg-[#0EA5E9] rounded-r-full shadow-[0_0_10px_#0EA5E9]" />
+                          )}
+                          <div className="flex items-center gap-3">
+                            <div className={`p-1.5 rounded-lg transition-all duration-300 ${
+                              active ? 'bg-sky-500/20 text-sky-400' : 'text-slate-400 group-hover:text-white group-hover:bg-slate-800'
+                            }`}>
+                              <Icon className={`w-5 h-5 transition-transform duration-300 ease-out ${getIconAnimation(item.id)}`} />
+                            </div>
+                            <span className="text-sm tracking-wide">{item.label}</span>
+                          </div>
+                        </>
+                      );
+                    }}
                   </NavLink>
                 );
               })}
@@ -114,13 +157,19 @@ export default function DashboardLayout() {
           </div>
         </div>
 
-        <div className="p-4 flex flex-col gap-3 shrink-0 border-t border-slate-800">
+        <div className="p-4 flex flex-col gap-3 shrink-0 border-t border-slate-800/80">
           <button
             onClick={handleLogout}
-            className="w-full flex items-center gap-3 px-4 py-3 text-slate-400 hover:text-rose-500 hover:bg-rose-500/10 rounded-lg transition-colors font-medium text-sm border border-transparent hover:border-rose-500/20"
+            className="group w-full flex items-center gap-3 px-4 py-3 text-slate-400 hover:text-rose-400 hover:bg-rose-500/10 rounded-xl transition-all duration-300 font-medium text-sm border border-transparent hover:border-rose-500/20 cursor-pointer"
           >
-            {isAdminImpersonating ? <XCircle className="w-5 h-5" /> : <LogOut className="w-5 h-5" />}
-            {isAdminImpersonating ? 'Thoát chế độ Admin' : 'Đăng xuất'}
+            <div className="p-1 rounded-lg text-slate-400 group-hover:text-rose-400 transition-colors">
+              {isAdminImpersonating ? (
+                <XCircle className="w-5 h-5 transition-transform duration-300 group-hover:rotate-90 group-hover:scale-110" />
+              ) : (
+                <LogOut className="w-5 h-5 transition-transform duration-300 group-hover:-translate-x-1 group-hover:scale-110" />
+              )}
+            </div>
+            <span>{isAdminImpersonating ? 'Thoát chế độ Admin' : 'Đăng xuất'}</span>
           </button>
         </div>
       </aside>
