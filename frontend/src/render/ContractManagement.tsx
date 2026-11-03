@@ -7,12 +7,17 @@
 import { useState, useEffect } from 'react';
 import {
   ChevronRight, FileText, Printer,
-  User, Eye, Search, Lock, ShieldAlert, Edit3, Trash2
+  User, Eye, Search, Lock, ShieldAlert, Edit3, Trash2, X,
+  RotateCcw, Clock, AlertTriangle, CheckCircle2, Car
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import RequestPriceChangeModal from '../components/RequestPriceChangeModal';
+import VehicleRecallModal from '../components/VehicleRecallModal';
+import { useLanguage } from '../context/LanguageContext';
 
 export default function ContractManagement() {
+  const { t } = useLanguage();
+  void t;
   const navigate = useNavigate();
   const userRole = localStorage.getItem('userRole') || 'TENANT_STAFF';
   const tenantId = localStorage.getItem('tenantId') || 'COMPANY_A';
@@ -25,6 +30,9 @@ export default function ContractManagement() {
   const [searchTerm, setSearchTerm] = useState('');
   const [viewingContract, setViewingContract] = useState<any | null>(null);
   const [requestContractId, setRequestContractId] = useState<string | null>(null);
+  const [recallingContract, setRecallingContract] = useState<any | null>(null);
+  const [editingPriceContract, setEditingPriceContract] = useState<any | null>(null);
+  const [managerNewPrice, setManagerNewPrice] = useState<string>('');
 
   useEffect(() => {
     loadData();
@@ -38,8 +46,130 @@ export default function ContractManagement() {
     const allContracts = JSON.parse(localStorage.getItem('sys_e_contracts') || '[]');
     setContracts(allContracts.filter((c: any) => c.tenantId === tenantId).reverse());
 
-    const allDrafts = JSON.parse(localStorage.getItem('sys_contract_drafts') || '[]');
-    setDrafts(allDrafts.filter((d: any) => d.tenantId === tenantId || !d.tenantId).reverse());
+    // Hỗ trợ gộp cả key sys_contract_drafts và sys_contract_drafts_${tenantId}
+    const legacyDrafts = JSON.parse(localStorage.getItem(`sys_contract_drafts_${tenantId}`) || '[]');
+    const standardDrafts = JSON.parse(localStorage.getItem('sys_contract_drafts') || '[]');
+    const draftMap = new Map();
+    [...legacyDrafts, ...standardDrafts].forEach((d: any) => {
+      if (d && d.id) draftMap.set(d.id, d);
+    });
+    const merged = Array.from(draftMap.values());
+    localStorage.setItem('sys_contract_drafts', JSON.stringify(merged));
+    setDrafts(merged.filter((d: any) => d.tenantId === tenantId || !d.tenantId).reverse());
+  };
+
+  /**
+   * Thuật toán tính toán thời hạn hợp đồng và xác định trạng thái tự động.
+   */
+  const calculateContractExpiry = (contract: any) => {
+    if (contract.status === 'COMPLETED' || contract.recallStatus === 'RECALLED') {
+      return {
+        status: 'RECALLED',
+        badge: 'Đã thanh lý / Thu hồi',
+        badgeClass: 'bg-slate-100 text-slate-700 border-slate-300',
+        remainingText: 'Hợp đồng đã kết thúc',
+      };
+    }
+
+    if (contract.status === 'RECEIVED' || contract.recallStatus === 'RECEIVED') {
+      return {
+        status: 'RECEIVED',
+        badge: 'Đã nhận xe / Chờ nghiệm thu',
+        badgeClass: 'bg-sky-50 text-sky-700 border-sky-300 font-bold',
+        remainingText: 'Đang kiểm định hiện trường',
+      };
+    }
+
+    if (contract.status === 'PENDING_RECALL' || contract.recallStatus === 'PENDING_RECALL') {
+      return {
+        status: 'PENDING_RECALL',
+        badge: 'Đang yêu cầu thu hồi',
+        badgeClass: 'bg-amber-50 text-amber-700 border-amber-300 font-bold',
+        remainingText: 'Chờ tiếp nhận bàn giao xe',
+      };
+    }
+
+    const endDateStr = contract.rentEndDate || contract.contractData?.rentEndDate;
+    if (!endDateStr) {
+      return {
+        status: 'ACTIVE',
+        badge: 'Còn hiệu lực',
+        badgeClass: 'bg-emerald-50 text-emerald-700 border-emerald-200',
+        remainingText: 'Không giới hạn ngày',
+      };
+    }
+
+    let endDate: Date;
+    if (endDateStr.includes('/')) {
+      const parts = endDateStr.split('/');
+      if (parts.length === 3) {
+        endDate = new Date(Number(parts[2]), Number(parts[1]) - 1, Number(parts[0]), 23, 59, 59);
+      } else {
+        endDate = new Date(endDateStr);
+      }
+    } else {
+      endDate = new Date(endDateStr);
+    }
+
+    const now = new Date();
+    const diffMs = endDate.getTime() - now.getTime();
+    const diffDays = Math.ceil(diffMs / (1000 * 60 * 60 * 24));
+
+    if (diffDays < 0) {
+      return {
+        status: 'EXPIRED',
+        badge: 'Đã hết hạn',
+        badgeClass: 'bg-rose-50 text-rose-700 border-rose-300 font-extrabold',
+        remainingText: `Quá hạn ${Math.abs(diffDays)} ngày`,
+      };
+    }
+
+    if (diffDays <= 3) {
+      return {
+        status: 'EXPIRING_SOON',
+        badge: 'Sắp hết hạn',
+        badgeClass: 'bg-amber-50 text-amber-800 border-amber-300 font-extrabold animate-pulse',
+        remainingText: `Còn ${diffDays} ngày (${Math.max(1, Math.round(diffMs / 3600000))} giờ)`,
+      };
+    }
+
+    return {
+      status: 'ACTIVE',
+      badge: 'Còn hiệu lực',
+      badgeClass: 'bg-emerald-50 text-emerald-700 border-emerald-200',
+      remainingText: `Còn ${diffDays} ngày`,
+    };
+  };
+
+  // Quản lý lưu giá sửa trực tiếp
+  const handleManagerSavePriceDirect = () => {
+    if (!editingPriceContract || !managerNewPrice) return;
+    const numPrice = Number(managerNewPrice.replace(/[^0-9]/g, ''));
+    if (!numPrice || numPrice <= 0) {
+      alert('Vui lòng nhập đơn giá hợp lệ lớn hơn 0.');
+      return;
+    }
+
+    const allContracts = JSON.parse(localStorage.getItem('sys_e_contracts') || '[]');
+    const updated = allContracts.map((c: any) => {
+      if (c.id === editingPriceContract.id) {
+        return {
+          ...c,
+          value: `${numPrice.toLocaleString('vi-VN')} VNĐ`,
+          rentPrice: String(numPrice),
+          hasPendingRequest: false,
+          lastModified: new Date().toLocaleDateString('vi-VN'),
+        };
+      }
+      return c;
+    });
+
+    localStorage.setItem('sys_e_contracts', JSON.stringify(updated));
+    setEditingPriceContract(null);
+    setManagerNewPrice('');
+    loadData();
+    window.dispatchEvent(new Event('storage'));
+    alert('Đã cập nhật đơn giá hợp đồng thành công!');
   };
 
   const handleSubmitPriceRequest = (reason: string) => {
@@ -410,76 +540,162 @@ export default function ContractManagement() {
               <table className="w-full text-left text-sm">
                 <thead className="bg-white text-[10px] font-bold text-slate-400 uppercase border-b border-slate-100">
                   <tr>
-                    <th className="p-4 pl-6">Mã Hợp Đồng</th>
+                    <th className="p-4 pl-6">Mã HĐ & Phương Tiện</th>
                     <th className="p-4">Khách Hàng (Bên Thuê)</th>
-                    <th className="p-4">Đơn giá / Trạng thái</th>
-                    <th className="p-4">Ngày cập nhật</th>
+                    <th className="p-4">Thời hạn & Tình trạng Hạn</th>
+                    <th className="p-4">Đơn giá thuê</th>
+                    <th className="p-4">Tiến độ Thu Hồi</th>
                     <th className="p-4 text-right pr-6">Thao tác & Phân quyền</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-slate-50">
+                <tbody className="divide-y divide-slate-50 text-xs">
                   {filteredData.length === 0 ? (
                     <tr>
-                      <td colSpan={5} className="p-12 text-center text-slate-500">
+                      <td colSpan={6} className="p-12 text-center text-slate-500">
                         <FileText className="w-12 h-12 text-slate-200 mx-auto mb-3" />
                         <p className="font-bold text-slate-600">Chưa có dữ liệu</p>
                       </td>
                     </tr>
                   ) : (
-                    filteredData.map((item) => (
-                      <tr key={item.id} className="hover:bg-slate-50/80 transition-colors">
-                        <td className="p-4 pl-6 font-mono text-slate-600 font-bold text-xs">{item.id}</td>
-                        <td className="p-4">
-                          <p className="font-bold text-slate-800">{item.partnerName || item.partyB?.name || '(Chưa nhập tên)'}</p>
-                          <p className="text-[10px] font-mono text-slate-500">{item.partnerPhone || item.partyB?.phone}</p>
-                        </td>
-                        <td className="p-4">
-                          {activeTab === 'OFFICIAL' ? (
-                            <span className="font-bold text-emerald-600">{formatMoney(item.value || item.vehicle?.price)}</span>
-                          ) : (
-                            <span className="text-[10px] font-bold bg-amber-100 text-amber-700 px-2 py-1 rounded">Đang soạn thảo</span>
-                          )}
-                        </td>
-                        <td className="p-4 text-slate-500 text-xs">{item.date || item.lastModified}</td>
-                        <td className="p-4 pr-6 text-right">
-                          <div className="flex justify-end gap-2 items-center">
-                            {activeTab === 'OFFICIAL' && (
-                              <>
-                                <button onClick={() => setViewingContract(item)} className="px-2.5 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-600 text-xs font-bold rounded flex items-center gap-1">
-                                  <Eye className="w-3.5 h-3.5" /> Xem PDF
-                                </button>
-                                {isManager ? (
-                                  <button onClick={() => alert('Chức năng sửa giá trực tiếp đang cập nhật')} className="px-3 py-1.5 bg-sky-50 text-sky-600 font-bold rounded-lg text-xs border border-sky-200 flex items-center gap-1">
-                                    <Edit3 className="w-3 h-3" /> Sửa giá
-                                  </button>
-                                ) : (
-                                  item.hasPendingRequest ? (
-                                    <span className="flex items-center gap-1 text-[10px] font-bold text-amber-500 bg-amber-50 px-2 py-1.5 rounded border border-amber-100">
-                                      <ShieldAlert className="w-3.5 h-3.5" /> Chờ duyệt sửa
-                                    </span>
-                                  ) : (
-                                    <button onClick={() => setRequestContractId(item.id)} className="px-2.5 py-1.5 bg-indigo-50 text-indigo-600 border border-indigo-200 text-xs font-bold rounded flex items-center gap-1">
-                                      <Lock className="w-3 h-3" /> Yêu cầu sửa giá
-                                    </button>
-                                  )
-                                )}
-                              </>
-                            )}
+                    filteredData.map((item) => {
+                      const expiry = calculateContractExpiry(item);
+                      const plate = item.carPlate || item.vehicle?.plate || item.contractData?.carPlate || '---';
+                      const startDate = item.rentStartDate || item.contractData?.rentStartDate || item.date || '---';
+                      const endDate = item.rentEndDate || item.contractData?.rentEndDate || '---';
 
-                            {activeTab === 'DRAFT' && (
-                              <>
-                                <button onClick={() => navigate('/create-contract', { state: { draftId: item.id } })} className="px-3 py-1.5 bg-sky-50 text-sky-600 text-xs font-bold rounded flex items-center gap-1 border border-sky-200">
-                                  <Edit3 className="w-3.5 h-3.5" /> Tiếp tục soạn
-                                </button>
-                                <button onClick={() => handleDeleteDraft(item.id)} className="p-1.5 text-rose-400 hover:text-rose-600 hover:bg-rose-50 rounded">
-                                  <Trash2 className="w-4 h-4" />
-                                </button>
-                              </>
+                      return (
+                        <tr key={item.id} className="hover:bg-slate-50/80 transition-colors">
+                          {/* Cột 1: Mã HĐ & Xe */}
+                          <td className="p-4 pl-6">
+                            <span className="font-mono text-slate-800 font-bold text-xs">{item.id}</span>
+                            <div className="flex items-center gap-1.5 mt-1">
+                              <Car className="w-3.5 h-3.5 text-sky-500" />
+                              <span className="font-mono font-bold text-slate-700 bg-slate-100 px-1.5 py-0.5 rounded border border-slate-200">
+                                {plate}
+                              </span>
+                            </div>
+                          </td>
+
+                          {/* Cột 2: Khách hàng */}
+                          <td className="p-4">
+                            <p className="font-bold text-slate-800">{item.partnerName || item.partyB?.name || '(Chưa nhập tên)'}</p>
+                            <p className="text-[10px] font-mono text-slate-500">{item.partnerPhone || item.partyB?.phone || '---'}</p>
+                          </td>
+
+                          {/* Cột 3: Thời hạn & Tình trạng hạn HĐ */}
+                          <td className="p-4">
+                            {activeTab === 'OFFICIAL' ? (
+                              <div className="space-y-1">
+                                <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold border ${expiry.badgeClass}`}>
+                                  {expiry.status === 'EXPIRING_SOON' && <AlertTriangle className="w-3 h-3 text-amber-600" />}
+                                  {expiry.status === 'EXPIRED' && <AlertTriangle className="w-3 h-3 text-rose-600" />}
+                                  {expiry.status === 'ACTIVE' && <CheckCircle2 className="w-3 h-3 text-emerald-600" />}
+                                  {expiry.badge}
+                                </span>
+                                <div className="text-[10px] text-slate-500 flex items-center gap-1">
+                                  <Clock className="w-3 h-3 text-slate-400" />
+                                  <span>{expiry.remainingText}</span>
+                                </div>
+                                <div className="text-[10px] text-slate-400">
+                                  {startDate} ➔ {endDate}
+                                </div>
+                              </div>
+                            ) : (
+                              <span className="text-[10px] font-bold bg-amber-100 text-amber-700 px-2 py-1 rounded">Đang soạn thảo</span>
                             )}
-                          </div>
-                        </td>
-                      </tr>
-                    ))
+                          </td>
+
+                          {/* Cột 4: Đơn giá */}
+                          <td className="p-4 font-bold text-emerald-600 text-sm">
+                            {formatMoney(item.value || item.vehicle?.price || item.rentPrice)}
+                          </td>
+
+                          {/* Cột 5: Tiến độ Thu hồi */}
+                          <td className="p-4">
+                            {activeTab === 'OFFICIAL' ? (
+                              item.recallStatus === 'RECALLED' || item.status === 'COMPLETED' ? (
+                                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold bg-slate-100 text-slate-700 border border-slate-300">
+                                  <CheckCircle2 className="w-3 h-3 text-emerald-600" /> Đã hoàn tất thu hồi
+                                </span>
+                              ) : item.recallStatus === 'RECEIVED' || item.status === 'RECEIVED' ? (
+                                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold bg-sky-50 text-sky-700 border border-sky-300">
+                                  <Car className="w-3 h-3 text-sky-600" /> Đã nhận xe / Chờ nghiệm thu
+                                </span>
+                              ) : item.recallStatus === 'PENDING_RECALL' || item.status === 'PENDING_RECALL' ? (
+                                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold bg-amber-50 text-amber-700 border border-amber-300">
+                                  <Clock className="w-3 h-3 text-amber-600 animate-spin" /> Chờ tiếp nhận xe
+                                </span>
+                              ) : (
+                                <span className="text-[10px] text-slate-400 font-medium">Chưa yêu cầu</span>
+                              )
+                            ) : (
+                              <span className="text-[10px] text-slate-400">---</span>
+                            )}
+                          </td>
+
+                          {/* Cột 6: Thao tác */}
+                          <td className="p-4 pr-6 text-right">
+                            <div className="flex justify-end gap-1.5 items-center">
+                              {activeTab === 'OFFICIAL' && (
+                                <>
+                                  <button
+                                    onClick={() => setViewingContract(item)}
+                                    className="px-2.5 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-600 text-xs font-bold rounded flex items-center gap-1 transition"
+                                  >
+                                    <Eye className="w-3.5 h-3.5" /> Xem PDF
+                                  </button>
+
+                                  {/* Nút Thu hồi xe */}
+                                  <button
+                                    onClick={() => setRecallingContract(item)}
+                                    className="px-2.5 py-1.5 bg-amber-50 hover:bg-amber-100 text-amber-700 border border-amber-200 text-xs font-bold rounded flex items-center gap-1 transition"
+                                    title="Quy trình thu hồi phương tiện 3 giai đoạn"
+                                  >
+                                    <RotateCcw className="w-3.5 h-3.5" /> Thu hồi xe
+                                  </button>
+
+                                  {isManager ? (
+                                    <button
+                                      onClick={() => {
+                                        setEditingPriceContract(item);
+                                        setManagerNewPrice(String(item.value || item.vehicle?.price || item.rentPrice || ''));
+                                      }}
+                                      className="px-2.5 py-1.5 bg-sky-50 hover:bg-sky-100 text-sky-600 font-bold rounded text-xs border border-sky-200 flex items-center gap-1 transition"
+                                    >
+                                      <Edit3 className="w-3 h-3" /> Sửa giá
+                                    </button>
+                                  ) : (
+                                    item.hasPendingRequest ? (
+                                      <span className="flex items-center gap-1 text-[10px] font-bold text-amber-500 bg-amber-50 px-2 py-1.5 rounded border border-amber-100">
+                                        <ShieldAlert className="w-3.5 h-3.5" /> Chờ duyệt sửa
+                                      </span>
+                                    ) : (
+                                      <button
+                                        onClick={() => setRequestContractId(item.id)}
+                                        className="px-2.5 py-1.5 bg-indigo-50 hover:bg-indigo-100 text-indigo-600 border border-indigo-200 text-xs font-bold rounded flex items-center gap-1 transition"
+                                      >
+                                        <Lock className="w-3 h-3" /> Yêu cầu sửa giá
+                                      </button>
+                                    )
+                                  )}
+                                </>
+                              )}
+
+                              {activeTab === 'DRAFT' && (
+                                <>
+                                  <button onClick={() => navigate('/create-contract', { state: { draftId: item.id } })} className="px-3 py-1.5 bg-sky-50 text-sky-600 text-xs font-bold rounded flex items-center gap-1 border border-sky-200">
+                                    <Edit3 className="w-3.5 h-3.5" /> Tiếp tục soạn
+                                  </button>
+                                  <button onClick={() => handleDeleteDraft(item.id)} className="p-1.5 text-rose-400 hover:text-rose-600 hover:bg-rose-50 rounded">
+                                    <Trash2 className="w-4 h-4" />
+                                  </button>
+                                </>
+                              )}
+                            </div>
+                          </td>
+                        </tr>
+                      );
+                    })
                   )}
                 </tbody>
               </table>
@@ -488,12 +704,66 @@ export default function ContractManagement() {
         </div>
       </div>
 
-      {/* MODAL SỬA GIÁ */}
+      {/* MODAL SỬA GIÁ (YÊU CẦU CỦA NHÂN VIÊN) */}
       {requestContractId && (
         <RequestPriceChangeModal
           contractId={requestContractId}
           onClose={() => setRequestContractId(null)}
           onSubmit={handleSubmitPriceRequest}
+        />
+      )}
+
+      {/* MODAL QUẢN LÝ SỬA GIÁ TRỰC TIẾP */}
+      {editingPriceContract && (
+        <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-[150] flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-md p-6 animate-in zoom-in-95">
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="font-bold text-slate-800 text-base">Cập nhật Đơn giá Hợp đồng (Quản lý)</h3>
+              <button onClick={() => setEditingPriceContract(null)} className="text-slate-400 hover:text-slate-600">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            <p className="text-xs text-slate-500 mb-4">
+              Mã HĐ: <strong className="font-mono text-slate-800">{editingPriceContract.id}</strong> • Khách: <strong>{editingPriceContract.partnerName}</strong>
+            </p>
+            <div className="space-y-4">
+              <div>
+                <label className="block text-xs font-bold text-slate-700 mb-1">Đơn giá mới (VNĐ)</label>
+                <input
+                  type="text"
+                  value={managerNewPrice}
+                  onChange={e => setManagerNewPrice(e.target.value)}
+                  placeholder="VD: 1,200,000"
+                  className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm font-bold text-emerald-600 outline-none focus:border-sky-500"
+                />
+              </div>
+              <div className="flex justify-end gap-2 pt-2">
+                <button
+                  onClick={() => setEditingPriceContract(null)}
+                  className="px-4 py-2 text-xs font-bold text-slate-600 hover:bg-slate-100 rounded-xl"
+                >
+                  Hủy bỏ
+                </button>
+                <button
+                  onClick={handleManagerSavePriceDirect}
+                  className="px-5 py-2 text-xs font-bold text-white bg-sky-600 hover:bg-sky-700 rounded-xl shadow"
+                >
+                  Cập nhật giá
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL THU HỒI PHƯƠNG TIỆN 3 GIAI ĐOẠN */}
+      {recallingContract && (
+        <VehicleRecallModal
+          contract={recallingContract}
+          onClose={() => setRecallingContract(null)}
+          onSuccess={() => {
+            loadData();
+          }}
         />
       )}
 

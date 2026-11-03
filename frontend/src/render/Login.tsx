@@ -35,7 +35,14 @@ export default function Login() {
   const navigate = useNavigate();
 
   // Nhận diện Doanh nghiệp realtime khi người dùng nhập mã
-  const matchedTenant = DEMO_DB.tenants.find(t => t.code === tenantCode.trim().toUpperCase());
+    const getMatchedTenant = () => {
+    const code = tenantCode.trim().toUpperCase();
+    const stored = JSON.parse(localStorage.getItem('sys_tenants') || '[]');
+    const fromStored = stored.find((t: any) => t.code === code);
+    if (fromStored) return fromStored;
+    return DEMO_DB.tenants.find(t => t.code === code);
+  };
+  const matchedTenant = getMatchedTenant();
 
   // Hàm hỗ trợ điền nhanh tài khoản demo 1-Click
   const applyPreset = (code: string, user: string, pass: string = '123456') => {
@@ -55,33 +62,68 @@ export default function Login() {
       const codeInput = tenantCode.trim().toUpperCase();
       const userInput = username.trim().toLowerCase();
 
-      // 1. Tìm Doanh nghiệp theo Mã đăng nhập
-      const tenant = DEMO_DB.tenants.find(t => t.code === codeInput);
+      // 1. Tìm Doanh nghiệp theo Mã đăng nhập (hỗ trợ cả cấu hình đổi mã trong sys_tenants)
+      const storedTenants = JSON.parse(localStorage.getItem('sys_tenants') || '[]');
+      const allTenants = [...DEMO_DB.tenants];
+      storedTenants.forEach((st: any) => {
+        const idx = allTenants.findIndex(t => t.id === st.id);
+        if (idx >= 0) allTenants[idx] = { ...allTenants[idx], ...st };
+        else allTenants.push(st);
+      });
+
+      const tenant = allTenants.find(t => t.code === codeInput);
       if (!tenant) {
         setError('Mã đăng nhập doanh nghiệp không tồn tại.');
         setIsLoading(false);
         return;
       }
 
-      // 2. Tìm Người dùng theo Username
-      const user = DEMO_DB.users.find(u => u.username === userInput);
-      if (!user) {
+      // 2. Tìm Người dùng: Kiểm tra DEMO_DB.users hoặc sys_accounts
+      const demoUser = DEMO_DB.users.find(u => u.username === userInput);
+      const storedAccounts = JSON.parse(localStorage.getItem('sys_accounts') || '[]');
+      const customAccount = storedAccounts.find((a: any) => a.username.toLowerCase() === userInput);
+
+      if (!demoUser && !customAccount) {
         setError('Tài khoản đăng nhập không tồn tại.');
         setIsLoading(false);
         return;
       }
 
-      // 3. Kiểm tra Mật khẩu
-      if (user.password !== password) {
-        setError('Sai mật khẩu đăng nhập.');
-        setIsLoading(false);
-        return;
+      let userRoleForTenant: string | null | undefined = null;
+
+      if (customAccount) {
+        if (customAccount.password !== password) {
+          setError('Sai mật khẩu đăng nhập.');
+          setIsLoading(false);
+          return;
+        }
+        if (customAccount.status === 'LOCKED') {
+          setError('Tài khoản này đã bị khóa quyền truy cập. Vui lòng liên hệ Quản trị viên.');
+          setIsLoading(false);
+          return;
+        }
+        if (customAccount.tenantId !== tenant.id) {
+          setError(`Tài khoản "${userInput}" không thuộc doanh nghiệp "${tenant.name}".`);
+          setIsLoading(false);
+          return;
+        }
+        userRoleForTenant = customAccount.role;
+      } else if (demoUser) {
+        if (demoUser.password !== password) {
+          setError('Sai mật khẩu đăng nhập.');
+          setIsLoading(false);
+          return;
+        }
+        userRoleForTenant = demoUser.access[tenant.id as keyof typeof demoUser.access];
+        if (!userRoleForTenant) {
+          setError(`Tài khoản "${userInput}" không được phân quyền truy cập vào doanh nghiệp này.`);
+          setIsLoading(false);
+          return;
+        }
       }
 
-      // 4. Kiểm tra Phân quyền (Quyền truy cập của User vào Tenant này)
-      const userRoleForTenant = user.access[tenant.id as keyof typeof user.access];
       if (!userRoleForTenant) {
-        setError(`Tài khoản "${userInput}" không được phân quyền truy cập vào doanh nghiệp này.`);
+        setError('Không xác định được quyền hạn truy cập của tài khoản.');
         setIsLoading(false);
         return;
       }

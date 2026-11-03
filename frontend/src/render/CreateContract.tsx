@@ -6,13 +6,14 @@ import {
     AlertCircle, Printer, PenTool, Receipt, Check, X, Eraser,
     CheckCircle2, Download, CheckCircle, List, MapPin, Car, DollarSign, Users, Loader2
 } from 'lucide-react';
+import { vehicleService } from '../services/vehicleService';
 
 export default function CreateContract() {
     const navigate = useNavigate();
     const location = useLocation();
     const draftId = location.state?.draftId as string | undefined;
     const tenantId = localStorage.getItem('tenantId') || 'COMPANY_A';
-    const draftKey = `sys_contract_drafts_${tenantId}`;
+    const draftKey = 'sys_contract_drafts';
 
     const [formData, setFormData] = useState({
         id: draftId || `HD-NHAP-${Date.now()}`,
@@ -220,6 +221,20 @@ export default function CreateContract() {
             const existingContracts = JSON.parse(localStorage.getItem('sys_e_contracts') || '[]');
             existingContracts.unshift(newContract);
             localStorage.setItem('sys_e_contracts', JSON.stringify(existingContracts));
+
+            // Đồng bộ trạng thái xe tương ứng sang RENTED
+            if (formData.carPlate) {
+                try {
+                    vehicleService.updateVehicleStatus(
+                        tenantId,
+                        formData.carPlate,
+                        'RENTED',
+                        `Đã ký hợp đồng ${contractId} (Khách: ${formData.renterName})`
+                    );
+                } catch (vErr) {
+                    console.warn('Lỗi đồng bộ xe sang RENTED:', vErr);
+                }
+            }
 
             const drafts = JSON.parse(localStorage.getItem(draftKey) || '[]');
             localStorage.setItem(draftKey, JSON.stringify(drafts.filter((item: any) => item.id !== formData.id)));

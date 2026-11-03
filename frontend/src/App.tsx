@@ -8,11 +8,12 @@ import LiveTracking from './render/LiveTracking';
 import Analytics from './render/Analytics';
 import ContractManagement from './render/ContractManagement';
 import CreateContract from './render/CreateContract';
-// ĐÃ BỔ SUNG: Import trang Duyệt đơn giá
 import PriceApprovals from './render/PriceApprovals';
+import FleetManagement from './render/FleetManagement';
 
 import AdminLogin from './render/admin/AdminLogin';
 import AdminTenantList from './render/admin/AdminTenantList';
+import { LanguageProvider } from './context/LanguageContext';
 
 // Middleware bảo vệ Core Admin - SỬ DỤNG SESSION_STORAGE ĐỂ BẢO MẬT TỐI ĐA
 const RequireAdminAuth = ({ children }: { children: React.ReactNode }) => {
@@ -28,42 +29,45 @@ const RequireAdminAuth = ({ children }: { children: React.ReactNode }) => {
 
 export default function App() {
   return (
-    <BrowserRouter>
-      <Routes>
-        <Route path="/" element={<Navigate to="/portal/login" replace />} />
-        <Route path="/portal/login" element={<Login />} />
+    <LanguageProvider>
+      <BrowserRouter>
+        <Routes>
+          <Route path="/" element={<Navigate to="/portal/login" replace />} />
+          <Route path="/portal/login" element={<Login />} />
 
-        {/* =========================================================
-            KHU VỰC 1: CORE ADMIN LÕI (BẢO MẬT & ĐỘC LẬP HOÀN TOÀN)
-            Phải đặt bên ngoài DashboardLayout để không dính Sidebar
-            ========================================================= */}
-        <Route path="/overview/admin/login" element={<AdminLogin />} />
-        <Route
-          path="/overview/admin"
-          element={
-            <RequireAdminAuth>
-              <AdminTenantList />
-            </RequireAdminAuth>
-          }
-        />
+          {/* =========================================================
+              KHU VỰC 1: CORE ADMIN LÕI (BẢO MẬT & ĐỘC LẬP HOÀN TOÀN)
+              Phải đặt bên ngoài DashboardLayout để không dính Sidebar
+              ========================================================= */}
+          <Route path="/overview/admin/login" element={<AdminLogin />} />
+          <Route
+            path="/overview/admin"
+            element={
+              <RequireAdminAuth>
+                <AdminTenantList />
+              </RequireAdminAuth>
+            }
+          />
 
-        {/* =========================================================
-            KHU VỰC 2: GIAO DIỆN KHÁCH HÀNG (Manager, Staff, Admin nhập vai)
-            ========================================================= */}
-        <Route element={<DashboardLayout />}>
-          <Route path="/overview" element={<Overview />} />
-          <Route path="/settings" element={<Settings />} />
-          <Route path="/tracking" element={<LiveTracking />} />
-          <Route path="/analytics" element={<Analytics />} />
+          {/* =========================================================
+              KHU VỰC 2: GIAO DIỆN KHÁCH HÀNG (Manager, Staff, Admin nhập vai)
+              ========================================================= */}
+          <Route element={<DashboardLayout />}>
+            <Route path="/overview" element={<Overview />} />
+            <Route path="/fleet" element={<FleetManagement />} />
+            <Route path="/tracking" element={<LiveTracking />} />
+            <Route path="/analytics" element={<Analytics />} />
 
-          {/* Trang danh sách Hợp đồng / Đối tác */}
-          <Route path="/partners" element={<ContractManagement />} />
-          <Route path="/create-contract" element={<CreateContract />} />
+            {/* Trang danh sách Hợp đồng / Đối tác */}
+            <Route path="/partners" element={<ContractManagement />} />
+            <Route path="/create-contract" element={<CreateContract />} />
 
-          {/* ĐÃ BỔ SUNG: Route dành cho trang Duyệt đơn giá */}
-          <Route path="/approvals" element={<PriceApprovals />} />
-        </Route>
-      </Routes>
-    </BrowserRouter>
+            {/* Route dành cho trang Duyệt đơn giá */}
+            <Route path="/approvals" element={<PriceApprovals />} />
+            <Route path="/settings" element={<Settings />} />
+          </Route>
+        </Routes>
+      </BrowserRouter>
+    </LanguageProvider>
   );
 }

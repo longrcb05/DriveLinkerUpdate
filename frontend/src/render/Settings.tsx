@@ -8,13 +8,13 @@
  * 4. Nhật ký thao tác (Audit Logs).
  */
 
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import {
   Key, CheckCircle2, AlertCircle, Eye, EyeOff,
   History, Clock, ShieldAlert,
   Smartphone, Monitor, Laptop, Info, AlertTriangle, Cpu, Check, X,
-  Shield, Camera, MapPin, Bell, Lock, Save, Terminal,
-  ClipboardEdit, CheckSquare // Đã thêm import 2 icon này
+  Camera, MapPin, Bell, Lock, Save, Terminal,
+  ClipboardEdit, CheckSquare, Users, UserPlus
 } from 'lucide-react';
 
 /**
@@ -31,6 +31,17 @@ const initDemoData = () => {
 
   if (!localStorage.getItem('sys_logs')) {
     localStorage.setItem('sys_logs', JSON.stringify([]));
+  }
+
+  // KHỞI TẠO DỮ LIỆU TÀI KHOẢN DOANH NGHIỆP
+  if (!localStorage.getItem('sys_accounts')) {
+    localStorage.setItem('sys_accounts', JSON.stringify([
+      { id: 'ACC-001', tenantId: 'COMPANY_A', username: 'owner.an', fullName: 'Nguyễn Văn An', email: 'owner.an@drivelinker.vn', role: 'TENANT_ADMIN', status: 'ACTIVE', createdAt: '2026-10-15' },
+      { id: 'ACC-002', tenantId: 'COMPANY_A', username: 'staff.a', fullName: 'Trần Thị Lan', email: 'staff.a@drivelinker.vn', role: 'TENANT_STAFF', status: 'ACTIVE', createdAt: '2026-10-20' },
+      { id: 'ACC-003', tenantId: 'COMPANY_B', username: 'staff.b', fullName: 'Lê Văn Bình', email: 'staff.b@drivelinker.vn', role: 'TENANT_STAFF', status: 'ACTIVE', createdAt: '2026-10-22' },
+      { id: 'ACC-004', tenantId: 'COMPANY_C', username: 'owner.c', fullName: 'Vũ Văn Cường', email: 'owner.c@drivelinker.vn', role: 'TENANT_ADMIN', status: 'ACTIVE', createdAt: '2026-10-25' },
+      { id: 'ACC-005', tenantId: 'COMPANY_C', username: 'staff.c', fullName: 'Phạm Thị Chi', email: 'staff.c@drivelinker.vn', role: 'TENANT_STAFF', status: 'ACTIVE', createdAt: '2026-10-26' }
+    ]));
   }
 
   // KHỞI TẠO DỮ LIỆU THIẾT BỊ TRUY CẬP (Có thiết bị đang chờ duyệt)
@@ -77,6 +88,18 @@ export default function Settings() {
   const [isApprovalModalOpen, setIsApprovalModalOpen] = useState(false);
   const [approvalNotes, setApprovalNotes] = useState<{[key: string]: string}>({});
 
+  // --- Trạng thái: Quản lý tài khoản doanh nghiệp ---
+  const [accountList, setAccountList] = useState<any[]>([]);
+  const [isAddAccountModalOpen, setIsAddAccountModalOpen] = useState(false);
+  const [accountForm, setAccountForm] = useState({
+    fullName: '',
+    username: '',
+    email: '',
+    password: '',
+    role: 'TENANT_STAFF',
+  });
+  const [accountFormError, setAccountFormError] = useState('');
+
   // --- Trạng thái: Lịch sử ---
   const [activityLogs, setActivityLogs] = useState<any[]>([]);
 
@@ -96,7 +119,11 @@ export default function Settings() {
     const allLogs = JSON.parse(localStorage.getItem('sys_logs') || '[]');
     setActivityLogs(allLogs.filter((l: any) => l.tenantId === tenantId).sort((a: any, b: any) => b.timestamp - a.timestamp));
 
-    // 3. Tải Thiết bị truy cập & Phân tích IP
+    // 3. Tải Danh sách Tài khoản
+    const allAccounts = JSON.parse(localStorage.getItem('sys_accounts') || '[]');
+    setAccountList(allAccounts.filter((a: any) => a.tenantId === tenantId));
+
+    // 4. Tải Thiết bị truy cập & Phân tích IP
     const allDevices = JSON.parse(localStorage.getItem('sys_access_devices') || '[]');
     const tenantDevices = allDevices.filter((d: any) => d.tenantId === tenantId);
     setDeviceList(tenantDevices);
@@ -206,6 +233,79 @@ export default function Settings() {
         setSelectedDevice({ ...selectedDevice, status: action, note: finalNote });
       }
     }
+  };
+
+  // ================= LOGIC TẠO TÀI KHOẢN MỚI =================
+  const handleCreateAccount = (e: React.FormEvent) => {
+    e.preventDefault();
+    setAccountFormError('');
+
+    if (!accountForm.fullName.trim() || !accountForm.username.trim() || !accountForm.email.trim() || !accountForm.password) {
+      setAccountFormError('Vui lòng điền đầy đủ tất cả các trường.');
+      return;
+    }
+
+    if (accountForm.password.length < 6) {
+      setAccountFormError('Mật khẩu khởi tạo phải có độ dài tối thiểu 6 ký tự.');
+      return;
+    }
+
+    const cleanUsername = accountForm.username.trim().toLowerCase();
+    const cleanEmail = accountForm.email.trim().toLowerCase();
+
+    const allAccounts = JSON.parse(localStorage.getItem('sys_accounts') || '[]');
+
+    // Kiểm tra chống trùng lặp username hoặc email
+    const isDuplicate = allAccounts.some((a: any) =>
+      a.username.toLowerCase() === cleanUsername ||
+      a.email.toLowerCase() === cleanEmail
+    );
+
+    if (isDuplicate) {
+      setAccountFormError(`Tên đăng nhập "${cleanUsername}" hoặc Email "${cleanEmail}" đã tồn tại trong hệ thống!`);
+      return;
+    }
+
+    // Mã hóa an toàn Client-side giả lập (Base64 hash simulation)
+    const mockPasswordHash = btoa(unescape(encodeURIComponent(accountForm.password)));
+
+    const newAccount = {
+      id: `ACC-${Date.now().toString().slice(-6)}`,
+      tenantId,
+      username: cleanUsername,
+      fullName: accountForm.fullName.trim(),
+      email: cleanEmail,
+      password: accountForm.password, // giữ cho demo login
+      passwordHash: mockPasswordHash,
+      role: accountForm.role,
+      status: 'ACTIVE',
+      createdAt: new Date().toLocaleDateString('vi-VN'),
+    };
+
+    allAccounts.push(newAccount);
+    localStorage.setItem('sys_accounts', JSON.stringify(allAccounts));
+
+    logActivity('Tạo tài khoản mới', `Tài khoản: ${cleanUsername} (${accountForm.role === 'TENANT_ADMIN' ? 'Quản trị viên' : 'Nhân viên'})`);
+    loadData();
+
+    setIsAddAccountModalOpen(false);
+    setAccountForm({ fullName: '', username: '', email: '', password: '', role: 'TENANT_STAFF' });
+    alert(`Tạo tài khoản "${cleanUsername}" thành công! Tài khoản đã sẵn sàng để đăng nhập.`);
+  };
+
+  const handleToggleAccountStatus = (account: any) => {
+    const nextStatus = account.status === 'ACTIVE' ? 'LOCKED' : 'ACTIVE';
+    const actionText = nextStatus === 'LOCKED' ? 'khóa' : 'mở khóa';
+    if (!window.confirm(`Xác nhận ${actionText} tài khoản "${account.username}"?`)) return;
+
+    const allAccounts = JSON.parse(localStorage.getItem('sys_accounts') || '[]');
+    const updated = allAccounts.map((a: any) =>
+      a.id === account.id ? { ...a, status: nextStatus } : a
+    );
+    localStorage.setItem('sys_accounts', JSON.stringify(updated));
+
+    logActivity('Thay đổi trạng thái tài khoản', `${account.username} ➔ ${nextStatus}`);
+    loadData();
   };
 
   const getDeviceIcon = (type: string) => {
@@ -487,6 +587,98 @@ export default function Settings() {
         </div>
       </div>
 
+      {/* ================= 5. MODULE: QUẢN LÝ TÀI KHOẢN & PHÂN QUYỀN DOANH NGHIỆP ================= */}
+      <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden mt-6">
+        <div className="p-5 border-b border-slate-100 flex flex-wrap justify-between items-center gap-3 bg-slate-50/50">
+          <div>
+            <h3 className="font-bold text-slate-800 flex items-center gap-2">
+              <Users className="w-5 h-5 text-sky-500" /> Quản lý Tài khoản & Phân quyền Doanh nghiệp
+            </h3>
+            <p className="text-xs text-slate-500 mt-1">
+              Danh sách nhân sự thuộc doanh nghiệp. Phân quyền chặt chẽ giữa Quản trị viên (TENANT_ADMIN) và Nhân viên (TENANT_STAFF).
+            </p>
+          </div>
+          <button
+            onClick={() => {
+              setAccountFormError('');
+              setAccountForm({ fullName: '', username: '', email: '', password: '', role: 'TENANT_STAFF' });
+              setIsAddAccountModalOpen(true);
+            }}
+            className="bg-sky-500 hover:bg-sky-600 text-white px-4 py-2 rounded-xl text-sm font-bold flex items-center gap-2 shadow-sm transition-all active:scale-95"
+          >
+            <UserPlus className="w-4 h-4" /> Thêm tài khoản
+          </button>
+        </div>
+
+        <div className="overflow-x-auto">
+          <table className="w-full text-left text-sm">
+            <thead className="bg-white text-[10px] font-bold text-slate-400 uppercase border-b border-slate-100">
+              <tr>
+                <th className="p-4">Họ và tên</th>
+                <th className="p-4">Tên đăng nhập</th>
+                <th className="p-4">Email</th>
+                <th className="p-4">Vai trò</th>
+                <th className="p-4">Trạng thái</th>
+                <th className="p-4">Ngày tạo</th>
+                <th className="p-4 text-right">Thao tác</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-100">
+              {accountList.length === 0 ? (
+                <tr>
+                  <td colSpan={7} className="p-8 text-center text-slate-400 text-sm">
+                    Chưa có tài khoản nào được tạo cho doanh nghiệp này.
+                  </td>
+                </tr>
+              ) : (
+                accountList.map((acc: any) => (
+                  <tr key={acc.id} className="hover:bg-slate-50/80 transition-colors">
+                    <td className="p-4 font-bold text-slate-800">{acc.fullName}</td>
+                    <td className="p-4 font-mono text-xs font-semibold text-slate-600">{acc.username}</td>
+                    <td className="p-4 text-slate-600 text-xs">{acc.email}</td>
+                    <td className="p-4">
+                      {acc.role === 'TENANT_ADMIN' ? (
+                        <span className="px-2.5 py-1 text-xs font-bold rounded-lg bg-purple-50 text-purple-700 border border-purple-200">
+                          Quản trị viên (ADMIN)
+                        </span>
+                      ) : (
+                        <span className="px-2.5 py-1 text-xs font-bold rounded-lg bg-sky-50 text-sky-700 border border-sky-200">
+                          Nhân viên (STAFF)
+                        </span>
+                      )}
+                    </td>
+                    <td className="p-4">
+                      {acc.status === 'ACTIVE' ? (
+                        <span className="px-2.5 py-1 text-xs font-bold rounded-lg bg-emerald-50 text-emerald-700 border border-emerald-200">
+                          Đang hoạt động
+                        </span>
+                      ) : (
+                        <span className="px-2.5 py-1 text-xs font-bold rounded-lg bg-rose-50 text-rose-700 border border-rose-200">
+                          Đã khóa
+                        </span>
+                      )}
+                    </td>
+                    <td className="p-4 text-xs text-slate-500 font-mono">{acc.createdAt || '---'}</td>
+                    <td className="p-4 text-right">
+                      <button
+                        onClick={() => handleToggleAccountStatus(acc)}
+                        className={`px-3 py-1.5 text-xs font-bold rounded-lg transition-colors ${
+                          acc.status === 'ACTIVE'
+                            ? 'bg-rose-50 text-rose-600 hover:bg-rose-100 border border-rose-200'
+                            : 'bg-emerald-50 text-emerald-600 hover:bg-emerald-100 border border-emerald-200'
+                        }`}
+                      >
+                        {acc.status === 'ACTIVE' ? 'Khóa tài khoản' : 'Mở khóa'}
+                      </button>
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
       {/* ================= MODALS ================= */}
 
       {/* MODAL: XÉT DUYỆT HÀNG LOẠT (TÍNH NĂNG MỚI) */}
@@ -622,6 +814,122 @@ export default function Settings() {
           </div>
         </div>
       )}
+
+      {/* MODAL: THÊM TÀI KHOẢN MỚI */}
+      {isAddAccountModalOpen && (
+        <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4 backdrop-blur-sm">
+          <div className="bg-white rounded-2xl w-full max-w-lg overflow-hidden shadow-2xl animate-in fade-in zoom-in-95">
+            <div className="flex items-center justify-between p-5 border-b border-slate-100 bg-slate-50">
+              <h2 className="font-bold text-slate-800 text-lg flex items-center gap-2">
+                <UserPlus className="w-5 h-5 text-sky-500" /> Thêm tài khoản nhân sự
+              </h2>
+              <button
+                onClick={() => setIsAddAccountModalOpen(false)}
+                className="text-slate-400 hover:text-slate-600 transition-colors p-1 rounded-lg"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <form onSubmit={handleCreateAccount} className="p-6 space-y-4">
+              {accountFormError && (
+                <div className="p-3 rounded-lg bg-rose-50 border border-rose-200 text-rose-700 text-xs font-medium flex items-center gap-2">
+                  <AlertCircle className="w-4 h-4 shrink-0" />
+                  {accountFormError}
+                </div>
+              )}
+
+              <div>
+                <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
+                  Họ và tên <span className="text-rose-500">*</span>
+                </label>
+                <input
+                  type="text"
+                  placeholder="VD: Nguyễn Văn Bình"
+                  value={accountForm.fullName}
+                  onChange={(e) => setAccountForm({ ...accountForm, fullName: e.target.value })}
+                  className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-lg text-sm text-slate-800 outline-none focus:border-sky-500 focus:bg-white transition-all font-medium"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
+                    Tên đăng nhập <span className="text-rose-500">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="VD: binh.nv"
+                    value={accountForm.username}
+                    onChange={(e) => setAccountForm({ ...accountForm, username: e.target.value })}
+                    className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-lg text-sm text-slate-800 outline-none focus:border-sky-500 focus:bg-white transition-all font-medium"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
+                    Mật khẩu <span className="text-rose-500">*</span>
+                  </label>
+                  <input
+                    type="password"
+                    placeholder="Tối thiểu 6 ký tự"
+                    value={accountForm.password}
+                    onChange={(e) => setAccountForm({ ...accountForm, password: e.target.value })}
+                    className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-lg text-sm text-slate-800 outline-none focus:border-sky-500 focus:bg-white transition-all font-medium"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
+                  Email công việc <span className="text-rose-500">*</span>
+                </label>
+                <input
+                  type="email"
+                  placeholder="VD: binh.nv@drivelinker.vn"
+                  value={accountForm.email}
+                  onChange={(e) => setAccountForm({ ...accountForm, email: e.target.value })}
+                  className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-lg text-sm text-slate-800 outline-none focus:border-sky-500 focus:bg-white transition-all font-medium"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
+                  Vai trò phân quyền
+                </label>
+                <select
+                  value={accountForm.role}
+                  onChange={(e) => setAccountForm({ ...accountForm, role: e.target.value })}
+                  className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-lg text-sm text-slate-800 outline-none focus:border-sky-500 focus:bg-white transition-all font-medium"
+                >
+                  <option value="TENANT_STAFF">Nhân viên (TENANT_STAFF - Quản lý xe, xem hợp đồng, tạo yêu cầu)</option>
+                  <option value="TENANT_ADMIN">Quản trị viên (TENANT_ADMIN - Duyệt giá, cấu hình, quản lý nhân sự)</option>
+                </select>
+              </div>
+
+              <div className="p-3 bg-amber-50 rounded-xl border border-amber-200 text-amber-800 text-[11px] leading-relaxed">
+                <strong>Lưu ý:</strong> Tài khoản được tạo sẽ lưu vào hệ thống dữ liệu doanh nghiệp và có thể dùng để đăng nhập ngay lập tức.
+              </div>
+
+              <div className="flex justify-end gap-3 pt-3 border-t border-slate-100">
+                <button
+                  type="button"
+                  onClick={() => setIsAddAccountModalOpen(false)}
+                  className="px-4 py-2 text-sm font-semibold text-slate-600 hover:bg-slate-100 rounded-xl transition-colors"
+                >
+                  Hủy bỏ
+                </button>
+                <button
+                  type="submit"
+                  className="px-5 py-2 text-sm font-bold text-white bg-sky-500 hover:bg-sky-600 rounded-xl shadow transition-all active:scale-95 flex items-center gap-2"
+                >
+                  <UserPlus className="w-4 h-4" /> Tạo tài khoản
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
     </div>
   );
 }

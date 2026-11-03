@@ -3,7 +3,7 @@
  * @description Màn hình Manager xử lý yêu cầu. Cho phép nhập trực tiếp đơn giá mới.
  */
 
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { Clock, ChevronRight, Edit3, X, CheckCircle2 } from 'lucide-react';
 
 export default function PriceApprovals() {
@@ -18,7 +18,7 @@ export default function PriceApprovals() {
 
     const loadData = () => {
         setRequests(JSON.parse(localStorage.getItem('sys_price_requests') || '[]'));
-        setContracts(JSON.parse(localStorage.getItem('sys_contracts') || '[]'));
+        setContracts(JSON.parse(localStorage.getItem('sys_e_contracts') || '[]'));
     };
 
     useEffect(() => {
@@ -54,12 +54,14 @@ export default function PriceApprovals() {
                 return {
                     ...c,
                     hasPendingRequest: false, // Gỡ cờ chờ duyệt
-                    price: action === 'APPROVED' ? Number(newPrice) : c.price // Ghi đè giá nếu duyệt
+                    value: action === 'APPROVED' ? `${Number(newPrice).toLocaleString('vi-VN')} VNĐ` : c.value,
+                    rentPrice: action === 'APPROVED' ? String(newPrice) : c.rentPrice,
+                    price: action === 'APPROVED' ? Number(newPrice) : c.price
                 };
             }
             return c;
         });
-        localStorage.setItem('sys_contracts', JSON.stringify(updatedContracts));
+        localStorage.setItem('sys_e_contracts', JSON.stringify(updatedContracts));
 
         setProcessingReq(null);
         loadData();
