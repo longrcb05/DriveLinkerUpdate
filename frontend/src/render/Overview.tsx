@@ -1,8 +1,24 @@
 /**
  * @file Overview.tsx
- * @description Trang Tổng quan hệ thống.
- * Cung cấp cái nhìn toàn cảnh về đội xe thông qua các thẻ thống kê KPI.
- * Tích hợp bản đồ Google Maps thời gian thực và phân tích chi tiết hiệu suất doanh thu.
+ * @module Frontend/Dashboard
+ * @description Bảng điều khiển Tổng quan Vận hành & Bản đồ Số Giám sát Đội xe (Executive Fleet Telematics Dashboard).
+ * 
+ * KIẾN TRÚC & TÍNH NĂNG KỸ THUẬT:
+ * 1. Tích hợp Bản đồ Số GIS (Leaflet & Google Maps Tile Server):
+ *    - Sử dụng `react-leaflet` để dựng bản đồ số tương tác mượt mà.
+ *    - Hỗ trợ chuyển đổi linh hoạt giữa 2 chế độ bản đồ: 'm' (Roadmap - Bản đồ đường bộ) và 'y' (Hybrid/Satellite - Vệ tinh).
+ *    - Tự động định vị tâm bản đồ (`mapCenter`) theo tọa độ trụ sở chính của từng doanh nghiệp (Đà Nẵng, TP.HCM, Hà Nội).
+ * 
+ * 2. Biểu tượng Phương tiện Tương tác (Interactive Vehicle Marker):
+ *    - Khởi tạo Marker dạng `L.divIcon` HTML thuần, nhúng trực tiếp biển số xe, màu sắc phân cấp mức độ an toàn
+ *      (Đỏ: Nguy hiểm, Vàng: Cảnh báo, Xanh: An toàn) và hiệu ứng xung nhịp `animate-pulse` khi có rủi ro.
+ * 
+ * 3. Phân quyền Hiển thị Dữ liệu Tài chính (RBAC Financial Data Masking):
+ *    - Quản lý (`TENANT_ADMIN`, `SYS_ADMIN`): Xem chi tiết doanh thu, cơ cấu cho thuê/dịch vụ, tỷ lệ hoàn thành chỉ tiêu.
+ *    - Nhân viên (`TENANT_STAFF`): Tự động che thông tin doanh thu dưới dạng `***` kèm huy hiệu khóa bảo mật.
+ * 
+ * 4. Ngăn trượt Chi tiết Phụ trợ (Sliding Right Drawer):
+ *    - Bấm vào bất kỳ thẻ trạng thái xe hoặc danh sách cảnh báo sẽ mở Drawer chi tiết bên phải màn hình để tìm kiếm/lọc xe.
  */
 
 import { useState, useEffect } from 'react';
@@ -18,7 +34,14 @@ import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 
-// Tạo biểu tượng xe Google Maps phong cách Telematics chuyên nghiệp với 3 trạng thái Đỏ - Vàng - Xanh
+/**
+ * Khởi tạo biểu tượng xe Google Maps phong cách Telematics chuyên nghiệp.
+ * Tự động tính toán màu sắc viền, bóng đổ và hiệu ứng nhấp nháy dựa trên mức độ an toàn.
+ * 
+ * @param {string} safetyStatus - Trạng thái an toàn ('RED', 'YELLOW', 'GREEN' hoặc 'ALERT', 'WARNING')
+ * @param {string} plate - Biển số xe hiển thị trên nhãn Marker
+ * @returns {L.DivIcon} Đối tượng DivIcon của Leaflet sẵn sàng render lên map layer
+ */
 const createVehicleIcon = (safetyStatus: string, plate: string) => {
   const isAlert = safetyStatus === 'RED' || safetyStatus === 'ALERT';
   const isWarning = safetyStatus === 'YELLOW' || safetyStatus === 'WARNING';

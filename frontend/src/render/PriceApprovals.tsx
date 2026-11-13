@@ -1,6 +1,22 @@
 /**
  * @file PriceApprovals.tsx
- * @description Màn hình Manager xử lý yêu cầu. Cho phép nhập trực tiếp đơn giá mới.
+ * @module Frontend/Approvals
+ * @description Bàn Phê duyệt & Đàm phán Đơn giá Hợp đồng (Manager Price Approval Desk).
+ * 
+ * NGUYÊN TẮC THIẾT KẾ & TÍNH NĂNG KỸ THUẬT:
+ * 1. Cơ chế Chống Duyệt Trùng (Anti-Duplicate Action Guard):
+ *    - Kiểm tra điều kiện tiên quyết `status === 'PENDING'` trước khi cho phép Quản lý thao tác.
+ *    - Các yêu cầu đã xử lý lập tức được khóa và chuyển sang tab "Lịch sử duyệt" (HISTORY).
+ * 
+ * 2. Cập nhật Nguyên tử Đồng bộ Hợp đồng (Atomic State Transition):
+ *    - Khi Quản lý bấm Phê duyệt với đơn giá mới:
+ *      * Cập nhật trạng thái yêu cầu sang `APPROVED`.
+ *      * Tự động tìm hợp đồng tương ứng trong `sys_e_contracts` và cập nhật trường `rentPrice` sang đơn giá mới.
+ *      * Ghi nhận đầy đủ vết kiểm toán: `approvedBy`, `approvedAt`, `oldPrice`, `newPrice`, `managerNote`.
+ * 
+ * 3. Phân tách Tab Trực quan:
+ *    - Tab Chờ duyệt (`PENDING`): Hiển thị số lượng yêu cầu đang chờ xử lý bằng badge đếm động.
+ *    - Tab Lịch sử (`HISTORY`): Tra cứu các quyết định duyệt/từ chối trước đó cùng ghi chú lý do.
  */
 
 import { useState, useEffect } from 'react';
