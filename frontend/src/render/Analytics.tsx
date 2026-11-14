@@ -1,9 +1,20 @@
 /**
  * @file Analytics.tsx
- * @description Phân hệ Phân tích và Báo cáo (Analytics & Alerts).
- * Tích hợp Sơ đồ Burndown (Burn Chart) và Biểu đồ Cột (Bar Chart) phân phối sự cố theo thời gian.
- * Theo dõi tần suất rủi ro, tiến độ triệt tiêu cảnh báo an toàn và kết xuất báo cáo CSV.
- * Dữ liệu được cách ly theo định danh doanh nghiệp (tenantId).
+ * @module Frontend/Analytics
+ * @description Báo cáo Phân tích An toàn Giao thông & Thống kê Rủi ro Đội xe (Fleet Safety & AI Infraction Analytics).
+ * 
+ * KIẾN TRÚC & MÔ HÌNH DỮ LIỆU BÁO CÁO:
+ * 1. Sơ đồ Burndown Triệt tiêu Rủi ro (Incident Burndown Chart):
+ *    - Mô phỏng tốc độ xử lý và triệt tiêu các cảnh báo an toàn phát sinh theo từng khung giờ trong ngày làm việc.
+ *    - Trục tung thể hiện số lượng vi phạm còn tồn đọng; trục hoành là các mốc thời gian từ 07:00 đến 21:00.
+ * 
+ * 2. Phân bổ Vi phạm Theo Giờ & Cơ cấu Rủi ro:
+ *    - Biểu đồ Cột (Bar Chart): Thống kê mật độ sự cố tập trung vào các khung giờ cao điểm hoặc giờ tài xế dễ buồn ngủ (13:00 - 15:00).
+ *    - Biểu đồ Tròn (Pie Chart): Phân loại tỷ lệ các nhóm hành vi vi phạm: Nhắm mắt kéo dài (Drowsiness), Ngáp liên tục, Mất tập trung, Vượt tốc độ.
+ * 
+ * 3. Kết xuất Báo cáo CSV Chuẩn Hóa (UTF-8 CSV Exporter):
+ *    - Tạo chuỗi CSV có tiền tố BOM `\uFEFF` để Excel và Google Sheets mở file tiếng Việt có dấu không bị lỗi font.
+ *    - Đóng gói dữ liệu gồm Mã sự cố, Thời gian, Biển số, Tài xế, Loại vi phạm, Mức độ và Trạng thái xử lý.
  */
 
 import { useState, useMemo } from 'react';

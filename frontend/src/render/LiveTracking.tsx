@@ -1,12 +1,27 @@
 /**
  * @file LiveTracking.tsx
- * @description Phân hệ Giám sát Trí tuệ Nhân tạo AI DMS (Driver Monitoring System).
- * - Cột trái: Danh sách đội xe trực quan kèm bộ lọc và tìm kiếm nhanh.
- * - Ô trung tâm:
- *   1. Khung hình ảnh bằng chứng AI DMS thời gian thực & các thông tin cần thiết, dễ nhìn
- *      dành riêng cho nhân viên giám sát (Loại vi phạm, EAR, Vận tốc, Hành động cabin, Gọi tài xế, Báo động cabin).
- *   2. BỘ ĐIỀU KHIỂN & CHỌN THỜI GIAN ĐỂ TUA LẠI BẰNG CHỨNG (Rewind Timeline Scrubber / Playback Controls).
- *   3. Thư viện ảnh chụp sự cố các lần trước đó (History Evidence Gallery) kèm Lightbox phóng to.
+ * @module Frontend/DMS
+ * @description Buồng lái Giám sát An toàn Cabin & AI DMS (Driver Monitoring System Telematics Cockpit).
+ * 
+ * KIẾN TRÚC & QUY TRÌNH VẬN HÀNH (COCKPIT ARCHITECTURE):
+ * 1. Bố cục 2 Cột Chuyên Dụng (Two-Column Telematics Layout):
+ *    - Cột Trái: Danh sách đội xe cần giám sát với bộ lọc đa trạng thái (Tất cả, Cảnh báo nguy hiểm, An toàn/Tỉnh táo)
+ *      và thanh tìm kiếm tức thời theo biển số, tài xế hoặc dòng xe.
+ *    - Cột Phải: Bàn điều khiển trung tâm (Master Cockpit) hiển thị khung ảnh bằng chứng AI thời gian thực chụp từ camera cabin.
+ * 
+ * 2. Phân tích Sinh trắc học & Dữ liệu Vi phạm AI (Edge AI Metrics):
+ *    - EAR (Eye Aspect Ratio): Đo lường độ mở mắt, phát hiện nhắm mắt ngủ gật (EAR < 0.22 kéo dài >= 2.5s).
+ *    - MAR (Mouth Aspect Ratio): Đo lường độ mở vòm miệng, phát hiện ngáp sâu liên tục (MAR > 0.50).
+ *    - Head Pitch Angle: Góc cúi đầu gục xuống vô lăng hoặc lệch hướng nhìn lái xe an toàn.
+ *    - Speed & GPS Telemetry: Tốc độ xe thời gian thực đồng bộ cùng tọa độ địa lý.
+ * 
+ * 3. Công cụ Tua lại Lịch sử (Rewind Timeline Scrubber) & Thư viện Ảnh Bằng Chứng:
+ *    - Cho phép nhân viên điều hành kéo thanh trượt tua lại các mốc sự cố nguy hiểm trong quá khứ.
+ *    - Tích hợp Lightbox phóng to ảnh độ nét cao và nút tải file ảnh bằng chứng có dấu thời gian về máy tính.
+ * 
+ * 4. Can thiệp Khẩn cấp Từ xa (Remote Emergency Dispatch):
+ *    - Nút kích hoạt còi báo động khẩn cấp cabin (`Siren`) để đánh thức tài xế tức thì.
+ *    - Nút quay số trực tiếp gọi điện thoại kết nối tài xế (`Phone`).
  */
 
 import React, { useState, useMemo, useEffect, useRef } from 'react';

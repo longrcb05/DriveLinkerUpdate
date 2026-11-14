@@ -1,3 +1,22 @@
+/**
+ * @file CreateContract.tsx
+ * @module Frontend/Contracts
+ * @description Phân hệ Soạn thảo & Phát hành Hợp đồng Thuê xe Điện tử (Digital E-Contract Authoring Engine).
+ * 
+ * TÍNH NĂNG & NGUYÊN TẮC KỸ THUẬT:
+ * 1. Khung Ký số Điện tử HTML5 Canvas (Biometric Touch Signature):
+ *    - Sử dụng `canvasRef` bắt sự kiện chuột (`mousedown`, `mousemove`, `mouseup`) và màn hình cảm ứng (`touchstart`, `touchmove`, `touchend`).
+ *    - Trích xuất chữ ký điện tử trực tiếp sang định dạng Base64 PNG URL (`canvas.toDataURL('image/png')`) để nhúng vào trang in hợp đồng.
+ * 
+ * 2. Cơ chế Tự động Lưu & Khôi phục Bản nháp (Auto-Draft Resilience):
+ *    - Sử dụng `useRef(formData)` để giải quyết triệt để lỗi Stale Closure khi lưu bản nháp vào `sys_contract_drafts`.
+ *    - Cho phép phục hồi nguyên vẹn dữ liệu form, ảnh CCCD 2 mặt và chữ ký khi bấm sửa bản nháp từ màn hình danh sách.
+ * 
+ * 3. Đồng bộ Trạng thái Phương tiện (Fleet State Sync):
+ *    - Khi hợp đồng chính thức được phát hành, hệ thống tự động gọi `vehicleService.updateStatus(carPlate, 'RENTED')`
+ *      và phát sự kiện `dl_vehicles_updated` để cập nhật trạng thái xe trên toàn hệ thống.
+ */
+
 import { useLanguage } from '../context/LanguageContext';
 import React, { useState, useRef, useEffect } from 'react';
 import contractService from '../api/contractService';

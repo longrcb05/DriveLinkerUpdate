@@ -1,8 +1,25 @@
 /**
  * @file FleetManagement.tsx
- * @description Trang Quản lý & Theo dõi Đội xe (Fleet Tracking) hoàn chỉnh.
- * Hỗ trợ 6 trạng thái phương tiện, CRUD phương tiện, kiểm tra ràng buộc,
- * tích hợp bộ lọc, tìm kiếm và hỗ trợ song ngữ Tiếng Việt - English.
+ * @module Frontend/Fleet
+ * @description Phân hệ Quản trị & Điều phối Danh mục Đội xe (Fleet Vehicle Lifecycle Management).
+ * 
+ * KIẾN TRÚC & MÔ HÌNH VẬN HÀNH (STATE MACHINE & EVENT ARCHITECTURE):
+ * 1. Máy Trạng thái Phương tiện (Finite State Machine - 6 Trạng thái chuẩn hóa):
+ *    - AVAILABLE: Xe sẵn sàng nhận hợp đồng cho thuê mới.
+ *    - RENTED: Xe đang trong thời hạn hợp đồng vận hành của khách hàng.
+ *    - RESERVED: Xe đã được khách đặt cọc giữ chỗ trước.
+ *    - MAINTENANCE: Xe đang trong xưởng bảo dưỡng định kỳ hoặc sửa chữa hỏng hóc.
+ *    - PENDING_INSPECTION: Xe vừa thu hồi từ hợp đồng, bắt buộc trải qua khâu nghiệm thu kỹ thuật trước khi chuyển về AVAILABLE.
+ *    - INACTIVE: Xe tạm ngưng hoạt động hoặc thanh lý.
+ * 
+ * 2. Cơ chế Đồng bộ Đa Tab (Inter-Tab Event-Driven Synchronization):
+ *    - Lắng nghe cả sự kiện cục bộ `window.addEventListener('dl_vehicles_updated')` và sự kiện hệ thống `window.addEventListener('storage')`.
+ *    - Khi phương tiện được thêm mới từ Modal ở Header (`DashboardLayout`) hoặc cập nhật trạng thái từ hợp đồng,
+ *      danh sách xe trên màn hình này tự động tải lại mà không cần tải lại toàn trang (Zero Full Page Reload).
+ * 
+ * 3. Kiểm soát Ràng buộc Dữ liệu (Relational Constraint Protection):
+ *    - Chặn hành vi xóa nhầm xe đang có hợp đồng cho thuê còn hiệu lực (`status === 'RENTED'`).
+ *    - Yêu cầu bắt buộc kiểm định kỹ thuật khi tiếp nhận xe hoàn trả từ khách hàng.
  */
 
 import { useState, useEffect, useMemo, useCallback } from 'react';

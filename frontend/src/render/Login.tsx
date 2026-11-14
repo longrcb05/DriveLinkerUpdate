@@ -1,3 +1,27 @@
+/**
+ * @file Login.tsx
+ * @module Frontend/Auth
+ * @description Phân hệ Xác thực & Điều hướng Đa doanh nghiệp (Multi-Tenant Authentication Gateway).
+ * 
+ * KIẾN TRÚC & QUY TRÌNH XỬ LÝ (ARCHITECTURE & DATA FLOW):
+ * 1. Multi-Tenant Context:
+ *    - Xác thực người dùng dựa trên bộ 3 thông tin: Mã Doanh nghiệp (Company Code), Tên đăng nhập (Username), Mật khẩu (Password).
+ *    - Hỗ trợ bí danh linh hoạt (Alias normalization: CTA2026/CTYA26 -> COMPANY_A).
+ * 
+ * 2. Phân quyền vai trò (Role-Based Access Control - RBAC):
+ *    - TENANT_ADMIN: Toàn quyền quản trị chi nhánh (xem doanh thu, duyệt giá, cấu hình mã bảo mật, quản lý tài khoản nhân viên).
+ *    - TENANT_STAFF: Nhân viên vận hành (giám sát xe, lập hợp đồng, tạo yêu cầu duyệt giá; ẩn thông tin doanh thu nhạy cảm).
+ * 
+ * 3. Cơ chế Khả dụng cao (Resilient Fallback Mechanism):
+ *    - Hệ thống ưu tiên đọc CSDL tùy biến (Custom Accounts từ `sys_accounts`) do Admin tạo từ trang Settings.
+ *    - Tự động fallback về bộ dữ liệu hạt nhân `DEMO_DB` cho môi trường kiểm thử/thuyết trình ngoại tuyến.
+ *    - Kiểm tra trạng thái khóa tài khoản (`status === 'LOCKED'`) trước khi cấp quyền truy cập.
+ * 
+ * 4. Quản lý Phiên làm việc (Session Persistence):
+ *    - Ghi nhận thông tin phiên vào `localStorage` (`tenantId`, `tenantCode`, `tenantName`, `username`, `userRole`).
+ *    - Dữ liệu này được các Interceptor của Axios (`axiosClient.ts`) tự động trích xuất gắn vào header trong mọi request.
+ */
+
 import { useLanguage } from '../context/LanguageContext';
 import { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
@@ -7,7 +31,7 @@ import {
   Loader2, Globe, ChevronRight, Shield, HelpCircle, Check, Copy
 } from 'lucide-react';
 
-// === CƠ SỞ DỮ LIỆU GIẢ LẬP (MOCK DATABASE FRONTEND) ===
+// === CƠ SỞ DỮ LIỆU GIẢ LẬP (MOCK DATABASE FRONTEND CHO MÔI TRƯỜNG OFFLINE / TEST) ===
 const DEMO_DB = {
   tenants: [
     { id: 'COMPANY_A', name: 'Demo CTY A', code: 'CTA2026' },
@@ -23,7 +47,7 @@ const DEMO_DB = {
     { username: 'staff.c', password: '123456', access: { 'COMPANY_C': 'TENANT_STAFF' } },
   ]
 };
-// ======================================================
+// ==================================================================================
 
 export default function Login() {
   const { language, toggleLanguage } = useLanguage();
@@ -67,7 +91,11 @@ export default function Login() {
     }
   }, []);
 
-  // Nhận diện Doanh nghiệp realtime khi người dùng nhập mã
+  /**
+   * Tự động nhận diện và truy xuất thông tin Doanh nghiệp thời gian thực (Realtime Lookup)
+   * khi người dùng nhập Mã đăng nhập (Company Code).
+   * @returns {Object|null} Thông tin tenant khớp với mã hoặc null nếu chưa hợp lệ
+   */
   const getMatchedTenant = () => {
     if (!tenantCode || !tenantCode.trim()) return null;
     const code = tenantCode.trim().toUpperCase();
@@ -82,12 +110,26 @@ export default function Login() {
   };
   const matchedTenant = getMatchedTenant();
 
+  /**
+   * Sao chép thông tin tài khoản mẫu vào Clipboard phục vụ test nhanh.
+   * @param {string} text - Nội dung chuỗi cần copy
+   * @param {string} key - Mã định danh nút copy để kích hoạt trạng thái phản hồi UI
+   */
   const handleCopyHint = (text: string, key: string) => {
     navigator.clipboard.writeText(text);
     setCopiedKey(key);
     setTimeout(() => setCopiedKey(null), 1800);
   };
 
+  /**
+   * Xử lý xác thực đăng nhập (Form Submission Handler).
+   * Thực hiện quy trình 4 bước:
+   * 1. Kiểm tra tồn tại của Doanh nghiệp (Company Code verification).
+   * 2. Tìm kiếm định danh người dùng (User Lookup trong DEMO_DB & sys_accounts).
+   * 3. Xác minh mật khẩu & kiểm tra trạng thái khóa tài khoản (Password hash/plaintext & Lock Check).
+   * 4. Phân giải quyền hạn (Role Resolution), lưu phiên đăng nhập và điều hướng sang `/overview`.
+   * @param {React.FormEvent} e - Sự kiện Submit Form
+   */
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);

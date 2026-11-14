@@ -1,7 +1,25 @@
 /**
  * @file ContractManagement.tsx
- * @description Quản lý Đối tác, Hợp đồng Vận chuyển & Bản nháp.
- * Khắc phục hoàn toàn lỗi trôi trang PDF (Ép cứng đúng 2 trang A4 chuẩn).
+ * @module Frontend/Contracts
+ * @description Quản lý Vòng đời Hợp đồng Cho thuê Xe & Trình xem Hợp đồng Điện tử Chuẩn A4.
+ * 
+ * TÍNH NĂNG & NGUYÊN TẮC KỸ THUẬT:
+ * 1. Trình Xem Văn bản Hợp đồng A4 Độc Lập (Pixel-Perfect A4 PDF Viewer):
+ *    - Sử dụng layout bóng đổ trên nền xám đen cao cấp (`#323639`) mô phỏng trải nghiệm đọc tài liệu Adobe Acrobat chuyên nghiệp.
+ *    - Ép cứng kích thước chính xác 2 trang A4 chuẩn (chiều rộng 210mm, chiều cao 297mm) bằng CSS Flexbox và `@media print`,
+ *      khắc phục hoàn toàn lỗi vỡ layout hoặc nhảy trang khi in thực tế từ trình duyệt.
+ *    - Đóng dấu chìm Watermark chéo `DRIVELINKER` chống sao chép trái phép.
+ * 
+ * 2. Theo dõi & Cảnh báo Hạn Hợp đồng (Contract Expiry Monitoring):
+ *    - Tính toán số ngày hiệu lực còn lại theo thời gian thực (Remaining Days calculation).
+ *    - Phân cấp cảnh báo 4 mức trực quan: Còn hạn (> 3 ngày), Sắp hết hạn (<= 3 ngày), Đã hết hạn, Đã thu hồi xe.
+ * 
+ * 3. Quy trình Thu hồi Xe 3 Giai đoạn (3-Stage Vehicle Recall Integration):
+ *    - Tích hợp `VehicleRecallModal`: Tạo yêu cầu (`PENDING_RECALL`) -> Tiếp nhận hiện trường (`RECEIVED`) -> Nghiệm thu quyết toán (`COMPLETED`).
+ * 
+ * 4. Luồng Duyệt & Điều chỉnh Đơn giá (Price Negotiation Workflow):
+ *    - Nhân viên gửi yêu cầu đổi giá (`RequestPriceChangeModal`) gửi tới Quản lý phê duyệt.
+ *    - Quản lý có quyền chỉnh sửa đơn giá trực tiếp trên hợp đồng có hiệu lực.
  */
 
 import { useState, useEffect } from 'react';
